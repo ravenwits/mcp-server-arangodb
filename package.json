@@ -16,6 +16,8 @@
     "watch": "tsc --watch",
     "inspector": "npx @modelcontextprotocol/inspector build/index.js"
   },
+  "author": "Alp Sarıyer <hi@alpsariyer.dev>",
+  "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "0.6.0",
     "arangojs": "^9.2.0"
