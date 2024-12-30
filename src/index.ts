@@ -3,8 +3,14 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { Database, aql } from 'arangojs';
+import { promises as fs } from 'fs';
+import { join } from 'path';
 
 // Type definitions for request arguments
+interface BackupArgs {
+	outputDir: string;
+}
+
 interface QueryArgs {
 	query: string;
 	bindVars?: Record<string, unknown>;
@@ -157,6 +163,20 @@ class ArangoServer {
 						properties: {},
 					},
 				},
+				{
+					name: 'backup_db',
+					description: 'Backup all collections to JSON files',
+					inputSchema: {
+						type: 'object',
+						properties: {
+							outputDir: {
+								type: 'string',
+								description: 'Directory to store backup files',
+							},
+						},
+						required: ['outputDir'],
+					},
+				},
 			],
 		}));
 
@@ -226,6 +246,48 @@ class ArangoServer {
 								{
 									type: 'text',
 									text: JSON.stringify(collections, null, 2),
+								},
+							],
+						};
+					}
+
+					case 'backup_db': {
+						const args = request.params.arguments as unknown as BackupArgs;
+						const collections = await this.db.listCollections();
+
+						// Create output directory if it doesn't exist
+						await fs.mkdir(args.outputDir, { recursive: true });
+
+						const results = [];
+						for (const collection of collections) {
+							try {
+								// Query all documents in the collection
+								const cursor = await this.db.query(`FOR doc IN ${collection.name} RETURN doc`);
+								const data = await cursor.all();
+
+								// Write to file
+								const filePath = join(args.outputDir, `${collection.name}.json`);
+								await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+
+								results.push({
+									collection: collection.name,
+									status: 'success',
+									count: data.length,
+								});
+							} catch (error) {
+								results.push({
+									collection: collection.name,
+									status: 'error',
+									error: error instanceof Error ? error.message : 'Unknown error',
+								});
+							}
+						}
+
+						return {
+							content: [
+								{
+									type: 'text',
+									text: JSON.stringify(results, null, 2),
 								},
 							],
 						};
