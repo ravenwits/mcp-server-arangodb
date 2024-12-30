@@ -1,11 +1,11 @@
 import { ErrorCode, McpError, Request, Tool } from '@modelcontextprotocol/sdk/types.js';
-import { Database, aql } from 'arangojs';
+import { Database } from 'arangojs';
 import { promises as fs } from 'fs';
 import { join, resolve } from 'path';
 import { API_TOOLS } from './tools.js';
 import { BackupArgs, CollectionDocumentArgs, CollectionKeyArgs, QueryArgs, UpdateDocumentArgs } from './types.js';
 
-const PARALLEL_BACKUP_CHUNKS = 5; // Number of collections to backup in parallel
+const PARALLEL_BACKUP_CHUNKS = 5;
 
 export class ToolHandlers {
 	constructor(private db: Database, private tools: Tool[], private ensureConnection: () => Promise<void>) {}
@@ -87,6 +87,8 @@ export class ToolHandlers {
 				case API_TOOLS.BACKUP: {
 					const args = request.params.arguments as BackupArgs;
 					const outputDir = resolve(args.outputDir);
+					const collection = args.collection;
+					const docLimit = args.docLimit;
 
 					try {
 						await fs.mkdir(outputDir, { recursive: true, mode: 0o755 });
@@ -95,41 +97,55 @@ export class ToolHandlers {
 					}
 
 					try {
-						const collections = await this.db.listCollections();
 						const results = [];
-						const totalCollections = collections.length;
+						async function backupCollection(db: Database, outputDir: string, collection?: string, docLimit?: number) {
+							try {
+								const cursor = await db.query({
+									query: docLimit ? 'FOR doc IN @@collection LIMIT @limit RETURN doc' : 'FOR doc IN @@collection RETURN doc',
+									bindVars: {
+										'@collection': collection,
+										...(docLimit && { limit: docLimit }),
+									},
+								});
+								const data = await cursor.all();
+								const filePath = join(outputDir, `${collection}.json`);
+								await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+								return {
+									collection,
+									status: 'success',
+									count: data.length,
+									outputFile: filePath,
+								};
+							} catch (error) {
+								return {
+									collection,
+									status: 'error',
+									error: error instanceof Error ? error.message : 'Unknown error',
+								};
+							}
+						}
 
-						// Process collections in parallel chunks
-						for (let i = 0; i < collections.length; i += PARALLEL_BACKUP_CHUNKS) {
-							const chunk = collections.slice(i, i + PARALLEL_BACKUP_CHUNKS);
-							const chunkPromises = chunk.map(async (collection) => {
-								try {
-									const cursor = await this.db.query(aql`
-										FOR doc IN ${collection.name}
-										RETURN doc
-									`);
-									const data = await cursor.all();
-									const filePath = join(outputDir, `${collection.name}.json`);
-									await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+						if (collection) {
+							// Backup single collection
+							console.info(`Backing up collection: ${collection}`);
+							results.push(await backupCollection(this.db, outputDir, collection, docLimit));
+						} else {
+							// Backup all collections in parallel chunks
+							const collections = await this.db.listCollections();
+							console.info(`Found ${collections.length} collections to backup.`);
 
-									return {
-										collection: collection.name,
-										status: 'success',
-										count: data.length,
-										progress: `${i + 1}/${totalCollections} collections processed`,
-									};
-								} catch (error) {
-									return {
-										collection: collection.name,
-										status: 'error',
-										error: error instanceof Error ? error.message : 'Unknown error',
-										progress: `${i + 1}/${totalCollections} collections processed`,
-									};
-								}
-							});
+							// Process collections in chunks
+							for (let i = 0; i < collections.length; i += PARALLEL_BACKUP_CHUNKS) {
+								const chunk = collections.slice(i, i + PARALLEL_BACKUP_CHUNKS);
+								const backupPromises = chunk.map((collection) => {
+									console.info(`Backing up collection: ${collection.name}`);
+									return backupCollection(this.db, outputDir, collection.name, docLimit);
+								});
 
-							const chunkResults = await Promise.all(chunkPromises);
-							results.push(...chunkResults);
+								// Wait for the current chunk to complete before processing the next
+								const chunkResults = await Promise.all(backupPromises);
+								results.push(...chunkResults);
+							}
 						}
 
 						return {
@@ -140,7 +156,6 @@ export class ToolHandlers {
 										{
 											status: 'completed',
 											outputDirectory: outputDir,
-											totalCollections,
 											results,
 										},
 										null,

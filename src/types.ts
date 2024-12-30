@@ -1,6 +1,8 @@
 // Type definitions for request arguments
 export interface BackupArgs {
 	outputDir: string;
+	collection?: string;
+	docLimit?: number;
 }
 
 export interface QueryArgs {
