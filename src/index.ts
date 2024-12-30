@@ -1,40 +1,26 @@
 #!/usr/bin/env node
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { Database, aql } from 'arangojs';
-import { promises as fs } from 'fs';
-import { join } from 'path';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { Database } from 'arangojs';
+import { promises as fs, readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+import { createToolDefinitions } from './tools.js';
+import { ToolHandlers } from './handlers.js';
 
-// Type definitions for request arguments
-interface BackupArgs {
-	outputDir: string;
-}
-
-interface QueryArgs {
-	query: string;
-	bindVars?: Record<string, unknown>;
-}
-
-interface CollectionDocumentArgs {
-	collection: string;
-	document: Record<string, unknown>;
-}
-
-interface CollectionKeyArgs {
-	collection: string;
-	key: string;
-}
-
-interface UpdateDocumentArgs extends CollectionKeyArgs {
-	update: Record<string, unknown>;
-}
+// Get package version from package.json
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const packageJson = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
+const MAX_RECONNECTION_ATTEMPTS = 3;
+const RECONNECTION_DELAY = 1000; // 1 second
 
 // Get connection details from environment variables
 const ARANGO_URL = process.env.ARANGO_URL || 'http://localhost:8529';
 const ARANGO_DB = process.env.ARANGO_DB || '_system';
 const ARANGO_USERNAME = process.env.ARANGO_USERNAME;
 const ARANGO_PASSWORD = process.env.ARANGO_PASSWORD;
+const TOOLS = createToolDefinitions();
 
 if (!ARANGO_USERNAME || !ARANGO_PASSWORD) {
 	throw new Error('ARANGO_USERNAME and ARANGO_PASSWORD environment variables are required');
@@ -42,19 +28,19 @@ if (!ARANGO_USERNAME || !ARANGO_PASSWORD) {
 
 class ArangoServer {
 	private server: Server;
-	private db: Database;
+	private db!: Database; // Using definite assignment assertion
+	private isConnected: boolean = false;
+	private reconnectionAttempts: number = 0;
+	private toolHandlers: ToolHandlers;
 
 	constructor() {
-		// Initialize ArangoDB connection
-		this.db = new Database([ARANGO_URL]);
-		this.db.useBasicAuth(ARANGO_USERNAME, ARANGO_PASSWORD);
-		this.db = this.db.database(ARANGO_DB);
+		this.initializeDatabase();
 
 		// Initialize MCP server
 		this.server = new Server(
 			{
 				name: 'arango-server',
-				version: '0.1.0',
+				version: packageJson.version,
 			},
 			{
 				capabilities: {
@@ -63,7 +49,12 @@ class ArangoServer {
 			},
 		);
 
-		this.setupToolHandlers();
+		// Initialize tool handlers
+		this.toolHandlers = new ToolHandlers(this.db, TOOLS, this.ensureConnection.bind(this));
+
+		// Set up request handlers
+		this.server.setRequestHandler(ListToolsRequestSchema, () => this.toolHandlers.handleListTools());
+		this.server.setRequestHandler(CallToolRequestSchema, (request) => this.toolHandlers.handleCallTool(request));
 
 		// Error handling
 		this.server.onerror = (error) => console.error('[MCP Error]', error);
@@ -73,235 +64,48 @@ class ArangoServer {
 		});
 	}
 
-	private setupToolHandlers() {
-		this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-			tools: [
-				{
-					name: 'query',
-					description: 'Execute an AQL query',
-					inputSchema: {
-						type: 'object',
-						properties: {
-							query: {
-								type: 'string',
-								description: 'AQL query string',
-							},
-							bindVars: {
-								type: 'object',
-								description: 'Query bind variables',
-								additionalProperties: true,
-							},
-						},
-						required: ['query'],
-					},
-				},
-				{
-					name: 'insert',
-					description: 'Insert a document into a collection',
-					inputSchema: {
-						type: 'object',
-						properties: {
-							collection: {
-								type: 'string',
-								description: 'Collection name',
-							},
-							document: {
-								type: 'object',
-								description: 'Document to insert',
-								additionalProperties: true,
-							},
-						},
-						required: ['collection', 'document'],
-					},
-				},
-				{
-					name: 'update',
-					description: 'Update a document in a collection',
-					inputSchema: {
-						type: 'object',
-						properties: {
-							collection: {
-								type: 'string',
-								description: 'Collection name',
-							},
-							key: {
-								type: 'string',
-								description: 'Document key',
-							},
-							update: {
-								type: 'object',
-								description: 'Update object',
-								additionalProperties: true,
-							},
-						},
-						required: ['collection', 'key', 'update'],
-					},
-				},
-				{
-					name: 'remove',
-					description: 'Remove a document from a collection',
-					inputSchema: {
-						type: 'object',
-						properties: {
-							collection: {
-								type: 'string',
-								description: 'Collection name',
-							},
-							key: {
-								type: 'string',
-								description: 'Document key',
-							},
-						},
-						required: ['collection', 'key'],
-					},
-				},
-				{
-					name: 'list_collections',
-					description: 'List all collections in the database',
-					inputSchema: {
-						type: 'object',
-						properties: {},
-					},
-				},
-				{
-					name: 'backup_db',
-					description: 'Backup all collections to JSON files',
-					inputSchema: {
-						type: 'object',
-						properties: {
-							outputDir: {
-								type: 'string',
-								description: 'Directory to store backup files',
-							},
-						},
-						required: ['outputDir'],
-					},
-				},
-			],
-		}));
+	private async initializeDatabase() {
+		try {
+			this.db = new Database([ARANGO_URL]);
+			this.db.useBasicAuth(ARANGO_USERNAME, ARANGO_PASSWORD);
+			this.db = this.db.database(ARANGO_DB);
 
-		this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-			try {
-				switch (request.params.name) {
-					case 'query': {
-						const args = request.params.arguments as unknown as QueryArgs;
-						const cursor = await this.db.query(args.query, args.bindVars || {});
-						const result = await cursor.all();
-						return {
-							content: [
-								{
-									type: 'text',
-									text: JSON.stringify(result, null, 2),
-								},
-							],
-						};
-					}
+			// Test connection
+			await this.checkConnection();
+			this.isConnected = true;
+			this.reconnectionAttempts = 0;
+			console.error('Successfully connected to ArangoDB');
+		} catch (error) {
+			console.error('Failed to initialize database:', error instanceof Error ? error.message : 'Unknown error');
+			await this.handleConnectionError();
+		}
+	}
 
-					case 'insert': {
-						const args = request.params.arguments as unknown as CollectionDocumentArgs;
-						const coll = this.db.collection(args.collection);
-						const result = await coll.save(args.document);
-						return {
-							content: [
-								{
-									type: 'text',
-									text: JSON.stringify(result, null, 2),
-								},
-							],
-						};
-					}
+	private async checkConnection(): Promise<void> {
+		try {
+			await this.db.version();
+		} catch (error) {
+			this.isConnected = false;
+			throw error;
+		}
+	}
 
-					case 'update': {
-						const args = request.params.arguments as unknown as UpdateDocumentArgs;
-						const coll = this.db.collection(args.collection);
-						const result = await coll.update(args.key, args.update);
-						return {
-							content: [
-								{
-									type: 'text',
-									text: JSON.stringify(result, null, 2),
-								},
-							],
-						};
-					}
+	private async handleConnectionError(): Promise<void> {
+		if (this.reconnectionAttempts >= MAX_RECONNECTION_ATTEMPTS) {
+			throw new Error(`Failed to connect after ${MAX_RECONNECTION_ATTEMPTS} attempts`);
+		}
 
-					case 'remove': {
-						const args = request.params.arguments as unknown as CollectionKeyArgs;
-						const coll = this.db.collection(args.collection);
-						const result = await coll.remove(args.key);
-						return {
-							content: [
-								{
-									type: 'text',
-									text: JSON.stringify(result, null, 2),
-								},
-							],
-						};
-					}
+		this.reconnectionAttempts++;
+		console.error(`Attempting to reconnect (${this.reconnectionAttempts}/${MAX_RECONNECTION_ATTEMPTS})...`);
 
-					case 'list_collections': {
-						const collections = await this.db.listCollections();
-						return {
-							content: [
-								{
-									type: 'text',
-									text: JSON.stringify(collections, null, 2),
-								},
-							],
-						};
-					}
+		await new Promise((resolve) => setTimeout(resolve, RECONNECTION_DELAY));
+		await this.initializeDatabase();
+	}
 
-					case 'backup_db': {
-						const args = request.params.arguments as unknown as BackupArgs;
-						const collections = await this.db.listCollections();
-
-						// Create output directory if it doesn't exist
-						await fs.mkdir(args.outputDir, { recursive: true });
-
-						const results = [];
-						for (const collection of collections) {
-							try {
-								// Query all documents in the collection
-								const cursor = await this.db.query(`FOR doc IN ${collection.name} RETURN doc`);
-								const data = await cursor.all();
-
-								// Write to file
-								const filePath = join(args.outputDir, `${collection.name}.json`);
-								await fs.writeFile(filePath, JSON.stringify(data, null, 2));
-
-								results.push({
-									collection: collection.name,
-									status: 'success',
-									count: data.length,
-								});
-							} catch (error) {
-								results.push({
-									collection: collection.name,
-									status: 'error',
-									error: error instanceof Error ? error.message : 'Unknown error',
-								});
-							}
-						}
-
-						return {
-							content: [
-								{
-									type: 'text',
-									text: JSON.stringify(results, null, 2),
-								},
-							],
-						};
-					}
-
-					default:
-						throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${request.params.name}`);
-				}
-			} catch (error: unknown) {
-				if (error instanceof McpError) throw error;
-				const message = error instanceof Error ? error.message : 'Unknown error';
-				throw new McpError(ErrorCode.InternalError, `Database error: ${message}`);
-			}
-		});
+	private async ensureConnection(): Promise<void> {
+		if (!this.isConnected) {
+			await this.handleConnectionError();
+		}
 	}
 
 	async run() {
