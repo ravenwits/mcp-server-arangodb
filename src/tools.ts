@@ -83,13 +83,15 @@ export function createToolDefinitions(): Tool[] {
 		},
 		{
 			name: API_TOOLS.BACKUP as string,
-			description: 'Backup collections to JSON files. If no collection is specified, backs up all collections.',
+			description: 'Backup collections to JSON files.',
 			inputSchema: {
 				type: 'object',
 				properties: {
 					outputDir: {
 						type: 'string',
-						description: 'Directory to store backup files',
+						description: 'An absolute directory path to store backup files',
+						default: './backup',
+						optional: true,
 					},
 					collection: {
 						type: 'string',

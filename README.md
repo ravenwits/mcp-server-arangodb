@@ -155,6 +155,8 @@ Backup database collections:
 ```typescript
 {
   "outputDir": "./backup" // Specify an absolute output directory path for the backup files (optional)
+  "collection": "users" // Specify a collection name to backup (optional) If no collection name is provided, all collections will be backed up
+  "docLimit": 1000 // Specify the maximum number of documents to backup per collection (optional), if not provided, all documents will be backed up (not having a limit might cause timeout for large collections)
 }
 ```
 
