@@ -55,13 +55,13 @@ npm run watch
 
 To use with Claude Desktop, add the server config:
 
-On MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+ - MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+ - Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 
 To use with Cline VSCode Extension, add the server config:
 
-on MacOS: `~/Library/Application Support/Code/User/globalStorage/cline.cline/config.json`
-On Windows: `%APPDATA%/Code/User/globalStorage/cline.cline/config.json`
+ - MacOS: `~/Library/Application Support/Code/User/globalStorage/cline.cline/config.json`
+ - Windows: `%APPDATA%/Code/User/globalStorage/cline.cline/config.json`
 
 Add the following configuration to the `mcpServers` section:
 
