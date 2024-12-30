@@ -8,31 +8,32 @@ This is a TypeScript-based MCP server that provides database interaction capabil
 
 ### Tools
 
-- `query` - Execute AQL queries
+- `arango_query` - Execute AQL queries
   - Takes an AQL query string as required parameter
   - Optionally accepts bind variables for parameterized queries
   - Returns query results as JSON
 
-- `insert` - Insert documents into collections
+- `arango_insert` - Insert documents into collections
   - Takes collection name and document object as required parameters
   - Automatically generates document key if not provided
   - Returns the created document metadata
 
-- `update` - Update existing documents
+- `arango_update` - Update existing documents
   - Takes collection name, document key, and update object as required parameters
   - Returns the updated document metadata
 
-- `remove` - Remove documents from collections
+- `arango_remove` - Remove documents from collections
   - Takes collection name and document key as required parameters
   - Returns the removed document metadata
 
-- `list_collections` - List all collections in the database
-  - Returns array of collection information including names, IDs, and types
-
-- `backup_db` - Backup all collections to JSON files
+- `arango_backup` - Backup all collections to JSON files
   - Takes output directory path as required parameter
   - Creates JSON files for each collection with current data
   - Useful for data backup and migration purposes
+
+- `arango_list_collections` - List all collections in the database
+  - Returns array of collection information including names, IDs, and types
+
 
 ## Database Structure
 
@@ -56,6 +57,13 @@ To use with Claude Desktop, add the server config:
 
 On MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+
+To use with Cline VSCode Extension, add the server config:
+
+on MacOS: `~/Library/Application Support/Code/User/globalStorage/cline.cline/config.json`
+On Windows: `%APPDATA%/Code/User/globalStorage/cline.cline/config.json`
+
+Add the following configuration to the `mcpServers` section:
 
 ```json
 {
@@ -85,11 +93,21 @@ The server requires the following environment variables:
 
 ### Usage Examples
 
+You can pretty much provide any meaningful prompt and Claude will try to execute the appropriate function.
+
+Some example propmts:
+  - "List all collections in the database"
+  - "Query all users"
+  - "Insert a new document with name 'John Doe' and email 'john@example.com' to the 'users' collection"
+  - "Update the document with key '123456' or name 'Jane Doe' to change the age to 48"
+
 #### Usage with Claude App:
 ![](./assets/demo-claude.gif)
 
 #### Uasge with Cline VSCode extension:
 ![](./assets/demo-cline.gif)
+
+
 
 Query all users:
 ```typescript
@@ -125,6 +143,18 @@ Remove a document:
 {
   "collection": "users",
   "key": "123456"
+}
+```
+
+List all collections:
+```typescript
+{} // No parameters required
+```
+
+Backup database collections:
+```typescript
+{
+  "outputDir": "./backup" // Specify an absolute output directory path for the backup files (optional)
 }
 ```
 
