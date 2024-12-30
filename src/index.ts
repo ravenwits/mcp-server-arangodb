@@ -3,7 +3,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { Database } from 'arangojs';
-import { promises as fs, readFileSync } from 'fs';
+import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { createToolDefinitions } from './tools.js';
@@ -74,7 +74,7 @@ class ArangoServer {
 			await this.checkConnection();
 			this.isConnected = true;
 			this.reconnectionAttempts = 0;
-			console.error('Successfully connected to ArangoDB');
+			console.info('Successfully connected to ArangoDB');
 		} catch (error) {
 			console.error('Failed to initialize database:', error instanceof Error ? error.message : 'Unknown error');
 			await this.handleConnectionError();

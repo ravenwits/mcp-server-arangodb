@@ -82,14 +82,6 @@ export function createToolDefinitions(): Tool[] {
 			},
 		},
 		{
-			name: API_TOOLS.COLLECTIONS as string,
-			description: 'List all collections in the database',
-			inputSchema: {
-				type: 'object',
-				properties: {},
-			},
-		},
-		{
 			name: API_TOOLS.BACKUP as string,
 			description: 'Backup all collections to JSON files',
 			inputSchema: {
@@ -101,6 +93,14 @@ export function createToolDefinitions(): Tool[] {
 					},
 				},
 				required: ['outputDir'],
+			},
+		},
+		{
+			name: API_TOOLS.COLLECTIONS as string,
+			description: 'List all collections in the database',
+			inputSchema: {
+				type: 'object',
+				properties: {},
 			},
 		},
 	];

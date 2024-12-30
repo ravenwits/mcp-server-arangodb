@@ -1,4 +1,4 @@
-import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError } from '@modelcontextprotocol/sdk/types.js';
+import { ErrorCode, McpError, Request, Tool } from '@modelcontextprotocol/sdk/types.js';
 import { Database, aql } from 'arangojs';
 import { promises as fs } from 'fs';
 import { join, resolve } from 'path';
@@ -8,7 +8,7 @@ import { BackupArgs, CollectionDocumentArgs, CollectionKeyArgs, QueryArgs, Updat
 const PARALLEL_BACKUP_CHUNKS = 5; // Number of collections to backup in parallel
 
 export class ToolHandlers {
-	constructor(private db: Database, private tools: any, private ensureConnection: () => Promise<void>) {}
+	constructor(private db: Database, private tools: Tool[], private ensureConnection: () => Promise<void>) {}
 
 	async handleListTools() {
 		return {
@@ -16,13 +16,13 @@ export class ToolHandlers {
 		};
 	}
 
-	async handleCallTool(request: any) {
+	async handleCallTool(request: Request) {
 		try {
 			await this.ensureConnection();
 
-			switch (request.params.name) {
+			switch (request.params?.name) {
 				case API_TOOLS.QUERY: {
-					const args = request.params.arguments as unknown as QueryArgs;
+					const args = request.params.arguments as QueryArgs;
 					try {
 						const cursor = await this.db.query(args.query, args.bindVars || {});
 						const result = await cursor.all();
@@ -35,7 +35,7 @@ export class ToolHandlers {
 				}
 
 				case API_TOOLS.INSERT: {
-					const args = request.params.arguments as unknown as CollectionDocumentArgs;
+					const args = request.params.arguments as CollectionDocumentArgs;
 					try {
 						const coll = this.db.collection(args.collection);
 						const result = await coll.save(args.document);
@@ -48,7 +48,7 @@ export class ToolHandlers {
 				}
 
 				case API_TOOLS.UPDATE: {
-					const args = request.params.arguments as unknown as UpdateDocumentArgs;
+					const args = request.params.arguments as UpdateDocumentArgs;
 					try {
 						const coll = this.db.collection(args.collection);
 						const result = await coll.update(args.key, args.update);
@@ -61,7 +61,7 @@ export class ToolHandlers {
 				}
 
 				case API_TOOLS.REMOVE: {
-					const args = request.params.arguments as unknown as CollectionKeyArgs;
+					const args = request.params.arguments as CollectionKeyArgs;
 					try {
 						const coll = this.db.collection(args.collection);
 						const result = await coll.remove(args.key);
@@ -85,7 +85,7 @@ export class ToolHandlers {
 				}
 
 				case API_TOOLS.BACKUP: {
-					const args = request.params.arguments as unknown as BackupArgs;
+					const args = request.params.arguments as BackupArgs;
 					const outputDir = resolve(args.outputDir);
 
 					try {
@@ -155,7 +155,7 @@ export class ToolHandlers {
 				}
 
 				default:
-					throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${request.params.name}`);
+					throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${request.params?.name}`);
 			}
 		} catch (error: unknown) {
 			if (error instanceof McpError) throw error;
