@@ -29,6 +29,11 @@ This is a TypeScript-based MCP server that provides database interaction capabil
 - `list_collections` - List all collections in the database
   - Returns array of collection information including names, IDs, and types
 
+- `backup_db` - Backup all collections to JSON files
+  - Takes output directory path as required parameter
+  - Creates JSON files for each collection with current data
+  - Useful for data backup and migration purposes
+
 ## Database Structure
 
 The server is database-structure agnostic and can work with any collection names or structures as long as they follow ArangoDB's document and edge collection models.
@@ -36,11 +41,6 @@ The server is database-structure agnostic and can work with any collection names
 ## Development
 
 Install dependencies:
-```bash
-npm install
-```
-
-Build the server:
 ```bash
 npm run build
 ```
@@ -78,7 +78,7 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 
 The server requires the following environment variables:
 
-- `ARANGO_URL` - ArangoDB server URL
+- `ARANGO_URL` - ArangoDB server URL (note: 8529 is the default port for ArangoDB for local development)
 - `ARANGO_DATABASE` - Database name
 - `ARANGO_USERNAME` - Database user
 - `ARANGO_PASSWORD` - Database password
