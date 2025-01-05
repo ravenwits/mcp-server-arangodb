@@ -4,7 +4,9 @@ A Model Context Protocol server for ArangoDB
 
 This is a TypeScript-based MCP server that provides database interaction capabilities through ArangoDB. It implements core database operations and allows seamless integration with ArangoDB through MCP tools. You can use it wih Claude app and also extension for VSCode that works with mcp like Cline!
 
-<a href="https://glama.ai/mcp/servers/soeqalh2v9"><img width="380" height="200" src="https://glama.ai/mcp/servers/soeqalh2v9/badge" alt="Server for ArangoDB MCP server" /></a>
+<!-- markdownlint-disable MD033 -->
+[<img width="380" height="200" src="https://glama.ai/mcp/servers/soeqalh2v9/badge" alt="Server for ArangoDB MCP server" />](https://glama.ai/mcp/servers/soeqalh2v9)
+<!-- markdownlint-disable MD033 -->
 
 ## Features
 
@@ -36,6 +38,11 @@ This is a TypeScript-based MCP server that provides database interaction capabil
 - `arango_list_collections` - List all collections in the database
   - Returns array of collection information including names, IDs, and types
 
+- `arango_create_collection` - Create a new collection in the database
+  - Takes collection name as required parameter
+  - Optionally specify collection type (document or edge collection)
+  - Configure waitForSync behavior for write operations
+  - Returns collection information including name, type, and status
 
 ## Database Structure
 
@@ -44,11 +51,13 @@ The server is database-structure agnostic and can work with any collection names
 ## Development
 
 Install dependencies:
+
 ```bash
 npm run build
 ```
 
 For development with auto-rebuild:
+
 ```bash
 npm run watch
 ```
@@ -57,13 +66,13 @@ npm run watch
 
 To use with Claude Desktop, add the server config:
 
- - MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
- - Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+- MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 
 To use with Cline VSCode Extension, add the server config:
 
- - MacOS: `~/Library/Application Support/Code/User/globalStorage/cline.cline/config.json`
- - Windows: `%APPDATA%/Code/User/globalStorage/cline.cline/config.json`
+- MacOS: `~/Library/Application Support/Code/User/globalStorage/cline.cline/config.json`
+- Windows: `%APPDATA%/Code/User/globalStorage/cline.cline/config.json`
 
 Add the following configuration to the `mcpServers` section:
 
@@ -98,20 +107,23 @@ The server requires the following environment variables:
 You can pretty much provide any meaningful prompt and Claude will try to execute the appropriate function.
 
 Some example propmts:
-  - "List all collections in the database"
-  - "Query all users"
-  - "Insert a new document with name 'John Doe' and email 'john@example.com' to the 'users' collection"
-  - "Update the document with key '123456' or name 'Jane Doe' to change the age to 48"
 
-#### Usage with Claude App:
-![](./assets/demo-claude.gif)
+- "List all collections in the database"
+- "Query all users"
+- "Insert a new document with name 'John Doe' and email "<john@example.com>' to the 'users' collection"
+- "Update the document with key '123456' or name 'Jane Doe' to change the age to 48"
+- "Create a new collection named 'products'"
 
-#### Uasge with Cline VSCode extension:
-![](./assets/demo-cline.gif)
+#### Usage with Claude App
 
+![Demo of using ArangoDB MCP server with Claude App](./assets/demo-claude.gif)
 
+#### Uasge with Cline VSCode extension
+
+![Demo of using ArangoDB MCP server with Cline VSCode extension](./assets/demo-cline.gif)
 
 Query all users:
+
 ```typescript
 {
   "query": "FOR user IN users RETURN user"
@@ -119,6 +131,7 @@ Query all users:
 ```
 
 Insert a new document:
+
 ```typescript
 {
   "collection": "users",
@@ -130,6 +143,7 @@ Insert a new document:
 ```
 
 Update a document:
+
 ```typescript
 {
   "collection": "users",
@@ -141,6 +155,7 @@ Update a document:
 ```
 
 Remove a document:
+
 ```typescript
 {
   "collection": "users",
@@ -149,16 +164,28 @@ Remove a document:
 ```
 
 List all collections:
+
 ```typescript
 {} // No parameters required
 ```
 
 Backup database collections:
+
 ```typescript
 {
   "outputDir": "./backup" // Specify an absolute output directory path for the backup files (optional)
   "collection": "users" // Specify a collection name to backup (optional) If no collection name is provided, all collections will be backed up
   "docLimit": 1000 // Specify the maximum number of documents to backup per collection (optional), if not provided, all documents will be backed up (not having a limit might cause timeout for large collections)
+}
+```
+
+Create a new collection:
+
+```typescript
+{
+  "name": "products",
+  "type": 2, // 2 for document collection, 3 for edge collection (optional, defaults to document collection)
+  "waitForSync": false // Optional, defaults to false
 }
 ```
 
