@@ -1,9 +1,10 @@
 import { ErrorCode, McpError, Request, Tool } from '@modelcontextprotocol/sdk/types.js';
 import { Database } from 'arangojs';
+import { CollectionStatus, CollectionType, CreateCollectionOptions } from 'arangojs/collection';
 import { promises as fs } from 'fs';
 import { join, resolve } from 'path';
 import { API_TOOLS } from './tools.js';
-import { BackupArgs, CollectionDocumentArgs, CollectionKeyArgs, QueryArgs, UpdateDocumentArgs } from './types.js';
+import { BackupArgs, CollectionDocumentArgs, CollectionKeyArgs, CreateCollectionArgs, QueryArgs, UpdateDocumentArgs } from './types.js';
 
 const PARALLEL_BACKUP_CHUNKS = 5;
 
@@ -81,6 +82,38 @@ export class ToolHandlers {
 						};
 					} catch (error) {
 						throw new McpError(ErrorCode.InternalError, `Failed to list collections: ${error instanceof Error ? error.message : 'Unknown error'}`);
+					}
+				}
+
+				case API_TOOLS.CREATE_COLLECTION: {
+					const args = request.params.arguments as CreateCollectionArgs;
+					try {
+						const options: CreateCollectionOptions & { type?: CollectionType } = {
+							waitForSync: args.waitForSync || false,
+							type: args.type ?? CollectionType.DOCUMENT_COLLECTION,
+						};
+
+						const collection = await this.db.createCollection(
+							args.name,
+							options as CreateCollectionOptions & {
+								type: typeof options.type extends CollectionType.EDGE_COLLECTION ? CollectionType.EDGE_COLLECTION : CollectionType.DOCUMENT_COLLECTION;
+							},
+						);
+
+						// Return a simplified response without circular references
+						const properties = await collection.properties();
+						const response = {
+							name: collection.name,
+							indexes: collection.indexes(),
+							type: CollectionType[properties.type],
+							status: CollectionStatus[properties.status],
+						};
+
+						return {
+							content: [{ type: 'text', text: JSON.stringify(response, null, 2) }],
+						};
+					} catch (error) {
+						throw new McpError(ErrorCode.InvalidRequest, `Failed to create collection: ${error instanceof Error ? error.message : 'Unknown error'}`);
 					}
 				}
 

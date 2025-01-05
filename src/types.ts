@@ -1,3 +1,5 @@
+import { CollectionType } from 'arangojs/collection';
+
 // Type definitions for request arguments
 export interface BackupArgs {
 	outputDir: string;
@@ -22,4 +24,10 @@ export interface CollectionKeyArgs {
 
 export interface UpdateDocumentArgs extends CollectionKeyArgs {
 	update: Record<string, unknown>;
+}
+
+export interface CreateCollectionArgs {
+	name: string;
+	type?: CollectionType; // 2 for document collection, 3 for edge collection
+	waitForSync?: boolean;
 }

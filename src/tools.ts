@@ -1,4 +1,5 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
+import { CollectionType } from 'arangojs/collection';
 
 export function createToolDefinitions(): Tool[] {
 	return [
@@ -115,6 +116,30 @@ export function createToolDefinitions(): Tool[] {
 				properties: {},
 			},
 		},
+		{
+			name: API_TOOLS.CREATE_COLLECTION as string,
+			description: 'Create a new collection in the database',
+			inputSchema: {
+				type: 'object',
+				properties: {
+					name: {
+						type: 'string',
+						description: 'Name of the collection to create',
+					},
+					type: {
+						type: CollectionType,
+						description: 'Type of collection to create',
+						default: CollectionType.DOCUMENT_COLLECTION,
+					},
+					waitForSync: {
+						type: 'boolean',
+						description: 'If true, wait for data to be synchronized to disk before returning',
+						default: false,
+					},
+				},
+				required: ['name'],
+			},
+		},
 	];
 }
 
@@ -125,4 +150,5 @@ export enum API_TOOLS {
 	REMOVE = 'arango_remove',
 	BACKUP = 'arango_backup',
 	COLLECTIONS = 'arango_list_collections',
+	CREATE_COLLECTION = 'arango_create_collection',
 }
