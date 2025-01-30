@@ -1,4 +1,5 @@
 # MCP Server for ArangoDB
+[![smithery badge](https://smithery.ai/badge/@ravenwits/mcp-server-arangodb)](https://smithery.ai/server/@ravenwits/mcp-server-arangodb)
 
 A Model Context Protocol server for ArangoDB
 
@@ -63,6 +64,14 @@ npm run watch
 ```
 
 ## Installation
+
+### Installing via Smithery
+
+To install ArangoDB for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@ravenwits/mcp-server-arangodb):
+
+```bash
+npx -y @smithery/cli install @ravenwits/mcp-server-arangodb --client claude
+```
 
 To use with Claude Desktop, add the server config:
 
