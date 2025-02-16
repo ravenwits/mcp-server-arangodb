@@ -4,10 +4,6 @@ A Model Context Protocol server for ArangoDB
 
 This is a TypeScript-based MCP server that provides database interaction capabilities through ArangoDB. It implements core database operations and allows seamless integration with ArangoDB through MCP tools. You can use it wih Claude app and also extension for VSCode that works with mcp like Cline!
 
-<!-- markdownlint-disable MD033 -->
-[<img width="380" height="200" src="https://glama.ai/mcp/servers/soeqalh2v9/badge" alt="Server for ArangoDB MCP server" />](https://glama.ai/mcp/servers/soeqalh2v9)
-<!-- markdownlint-disable MD033 -->
-
 ## Features
 
 ### Tools
