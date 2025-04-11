@@ -42,24 +42,6 @@ This is a TypeScript-based MCP server that provides database interaction capabil
   - Configure waitForSync behavior for write operations
   - Returns collection information including name, type, and status
 
-## Database Structure
-
-The server is database-structure agnostic and can work with any collection names or structures as long as they follow ArangoDB's document and edge collection models.
-
-## Development
-
-Install dependencies:
-
-```bash
-npm run build
-```
-
-For development with auto-rebuild:
-
-```bash
-npm run watch
-```
-
 ## Installation
 
 ### Installing via NPM
@@ -166,7 +148,7 @@ The server requires the following environment variables:
 - `ARANGO_USERNAME` - Database user
 - `ARANGO_PASSWORD` - Database password
 
-### Usage Examples
+## Usage
 
 You can pretty much provide any meaningful prompt and Claude will try to execute the appropriate function.
 
@@ -178,11 +160,11 @@ Some example propmts:
 - "Update the document with key '123456' or name 'Jane Doe' to change the age to 48"
 - "Create a new collection named 'products'"
 
-#### Usage with Claude App
+### Usage with Claude App
 
 ![Demo of using ArangoDB MCP server with Claude App](./assets/demo-claude.gif)
 
-#### Uasge with Cline VSCode extension
+### Uasge with Cline VSCode extension
 
 ![Demo of using ArangoDB MCP server with Cline VSCode extension](./assets/demo-cline.gif)
 
@@ -253,9 +235,26 @@ Create a new collection:
 }
 ```
 
+Note: The server is database-structure agnostic and can work with any collection names or structures as long as they follow ArangoDB's document and edge collection models.
+
+## Development
+
+1. Clone the repository
+2. Install dependencies:
+
+    ```bash
+    npm run build
+    ```
+
+3. For development with auto-rebuild:
+
+    ```bash
+    npm run watch
+    ```
+
 ### Debugging
 
-Since MCP servers communicate over stdio, debugging can be challenging. We recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) for development:
+Since MCP servers communicate over stdio, debugging can be challenging.  recommended debugging can be done by using [MCP Inspector](https://github.com/modelcontextprotocol/inspector) for development:
 
 ```bash
 npm run inspector
