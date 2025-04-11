@@ -1,4 +1,5 @@
 # MCP Server for ArangoDB
+
 [![smithery badge](https://smithery.ai/badge/@ravenwits/mcp-server-arangodb)](https://smithery.ai/server/@ravenwits/mcp-server-arangodb)
 
 A Model Context Protocol server for ArangoDB
@@ -61,6 +62,60 @@ npm run watch
 
 ## Installation
 
+### Installing via NPM
+
+To install `arango-server` globally via NPM, run the following command:
+
+```bash
+npm install -g arango-server
+```
+
+### Running via NPX
+
+To run `arango-server` directly without installation, use the following command:
+
+```bash
+npx arango-server
+```
+
+### Configuring for VSCode Agent
+
+To use `arango-server` with the VSCode Copilot agent, you must have at least **VSCode 1.99.0 installed** and follow these steps:
+
+1. **Create or edit the MCP configuration file**:
+   - **Workspace-specific configuration**: Create or edit the `.vscode/mcp.json` file in your workspace.
+   - **User-specific configuration**: Optionally, specify the server in the [setting(mcp)](vscode://settings/mcp) VS Code [user settings](https://code.visualstudio.com/docs/getstarted/personalize-vscode#_configure-settings) to enable the MCP server across all workspaces.
+
+    *Tip: You can refer [here](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) to the MCP configuration documentation of VSCode for more details on how to set up the configuration file.*
+
+2. **Add the following configuration**:
+
+    ```json
+    {
+        "servers": {
+            "arango-mcp": {
+                "type": "stdio",
+                "command": "npx",
+                "args": ["arango-server"],
+                "env": {
+                    "ARANGO_URL": "http://localhost:8529",
+                    "ARANGO_DB": "v20",
+                    "ARANGO_USERNAME": "app",
+                    "ARANGO_PASSWORD": "75Sab@MYa3Dj8Fc"
+                }
+            }
+        }
+    }
+    ```
+
+3. **Start the MCP server**:
+   - Open the Command Palette in VSCode (`Ctrl+Shift+P` or `Cmd+Shift+P` on Mac).
+   - Run the command `MCP: Start Server` and select `arango-mcp` from the list.
+
+4. **Verify the server**:
+   - Open the Chat view in VSCode and switch to Agent mode.
+   - Use the `Tools` button to verify that the `arango-server` tools are available.
+
 ### Installing via Smithery
 
 To install ArangoDB for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@ravenwits/mcp-server-arangodb):
@@ -69,12 +124,16 @@ To install ArangoDB for Claude Desktop automatically via [Smithery](https://smit
 npx -y @smithery/cli install @ravenwits/mcp-server-arangodb --client claude
 ```
 
-To use with Claude Desktop, add the server config:
+#### To use with Claude Desktop
+
+Go to: `Settings > Developer > Edit Config` or
 
 - MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 
-To use with Cline VSCode Extension, add the server config:
+#### To use with Cline VSCode Extension
+
+Go to: `Cline Extension > MCP Servers > Edit Configuration` or
 
 - MacOS: `~/Library/Application Support/Code/User/globalStorage/cline.cline/config.json`
 - Windows: `%APPDATA%/Code/User/globalStorage/cline.cline/config.json`
