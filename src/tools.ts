@@ -16,7 +16,7 @@ export function createToolDefinitions(): Tool[] {
 					bindVars: {
 						type: 'object',
 						description: 'Query bind variables',
-						additionalProperties: true,
+						additionalProperties: { type: 'object' },
 					},
 				},
 				required: ['query'],
@@ -35,7 +35,7 @@ export function createToolDefinitions(): Tool[] {
 					document: {
 						type: 'object',
 						description: 'Document to insert',
-						additionalProperties: true,
+						additionalProperties: { type: 'object' },
 					},
 				},
 				required: ['collection', 'document'],
@@ -58,7 +58,7 @@ export function createToolDefinitions(): Tool[] {
 					update: {
 						type: 'object',
 						description: 'Update object',
-						additionalProperties: true,
+						additionalProperties: { type: 'object' },
 					},
 				},
 				required: ['collection', 'key', 'update'],
@@ -127,9 +127,10 @@ export function createToolDefinitions(): Tool[] {
 						description: 'Name of the collection to create',
 					},
 					type: {
-						type: CollectionType,
-						description: 'Type of collection to create',
+						type: 'integer',
+						description: 'Type of collection to create (2 for document collection, 3 for edge collection)',
 						default: CollectionType.DOCUMENT_COLLECTION,
+						enum: [CollectionType.DOCUMENT_COLLECTION, CollectionType.EDGE_COLLECTION],
 					},
 					waitForSync: {
 						type: 'boolean',
