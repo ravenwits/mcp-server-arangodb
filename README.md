@@ -130,7 +130,7 @@ Add the following configuration to the `mcpServers` section:
       "args": ["/path/to/arango-server/build/index.js"],
       "env": {
         "ARANGO_URL": "your_database_url",
-        "ARANGO_DATABASE": "your_database_name",
+        "ARANGO_DB": "your_database_name",
         "ARANGO_USERNAME": "your_username",
         "ARANGO_PASSWORD": "your_password"
       }
@@ -144,7 +144,7 @@ Add the following configuration to the `mcpServers` section:
 The server requires the following environment variables:
 
 - `ARANGO_URL` - ArangoDB server URL (note: 8529 is the default port for ArangoDB for local development)
-- `ARANGO_DATABASE` - Database name
+- `ARANGO_DB` - Database name
 - `ARANGO_USERNAME` - Database user
 - `ARANGO_PASSWORD` - Database password
 

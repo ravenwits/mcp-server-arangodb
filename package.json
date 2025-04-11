@@ -1,6 +1,6 @@
 {
 	"name": "arango-server",
-	"version": "0.4.2",
+	"version": "0.4.3",
 	"description": "A Model Context Protocol Server for ArangoDB",
 	"type": "module",
 	"bin": {

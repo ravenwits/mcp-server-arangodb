@@ -30,7 +30,7 @@ EXPOSE 8529
 
 # Set environment variables (these should be overridden at runtime)
 ENV ARANGO_URL=http://localhost:8529
-ENV ARANGO_DATABASE=your_database_name
+ENV ARANGO_DB=your_database_name
 ENV ARANGO_USERNAME=your_username
 ENV ARANGO_PASSWORD=your_password
 

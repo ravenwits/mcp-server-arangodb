@@ -7,14 +7,14 @@ startCommand:
     type: object
     required:
       - arangoUrl
-      - arangoDatabase
+      - arangoDb
       - arangoUsername
       - arangoPassword
     properties:
       arangoUrl:
         type: string
         description: The URL of the ArangoDB server.
-      arangoDatabase:
+      arangoDb:
         type: string
         description: The name of the database to connect to.
       arangoUsername:
@@ -26,4 +26,4 @@ startCommand:
   commandFunction:
     # A function that produces the CLI command to start the MCP on stdio.
     |-
-    (config) => ({command: 'node', args: ['build/index.js'], env: {ARANGO_URL: config.arangoUrl, ARANGO_DATABASE: config.arangoDatabase, ARANGO_USERNAME: config.arangoUsername, ARANGO_PASSWORD: config.arangoPassword}})
+    (config) => ({command: 'node', args: ['build/index.js'], env: {ARANGO_URL: config.arangoUrl, ARANGO_DB: config.arangoDatabase, ARANGO_USERNAME: config.arangoUsername, ARANGO_PASSWORD: config.arangoPassword}})
