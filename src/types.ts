@@ -28,6 +28,6 @@ export interface UpdateDocumentArgs extends CollectionKeyArgs {
 
 export interface CreateCollectionArgs {
 	name: string;
-	type?: CollectionType; // 2 for document collection, 3 for edge collection
+	type?: 'document' | 'edge'; // Changed from CollectionType to string literals
 	waitForSync?: boolean;
 }

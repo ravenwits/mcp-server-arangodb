@@ -90,8 +90,15 @@ export class ToolHandlers {
 					try {
 						const options: CreateCollectionOptions & { type?: CollectionType } = {
 							waitForSync: args.waitForSync || false,
-							type: args.type ?? CollectionType.DOCUMENT_COLLECTION,
 						};
+
+						// Map string type to CollectionType enum
+						if (args.type === 'edge') {
+							options.type = CollectionType.EDGE_COLLECTION;
+						} else {
+							// Default to document collection
+							options.type = CollectionType.DOCUMENT_COLLECTION;
+						}
 
 						const collection = await this.db.createCollection(
 							args.name,

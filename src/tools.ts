@@ -127,10 +127,10 @@ export function createToolDefinitions(): Tool[] {
 						description: 'Name of the collection to create',
 					},
 					type: {
-						type: 'integer',
-						description: 'Type of collection to create (2 for document collection, 3 for edge collection)',
-						default: CollectionType.DOCUMENT_COLLECTION,
-						enum: [CollectionType.DOCUMENT_COLLECTION, CollectionType.EDGE_COLLECTION],
+						type: 'string',
+						description: 'Type of collection to create ("document" or "edge")',
+						default: 'document',
+						enum: ['document', 'edge'],
 					},
 					waitForSync: {
 						type: 'boolean',

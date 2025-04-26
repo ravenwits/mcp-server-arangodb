@@ -11,29 +11,35 @@ This is a TypeScript-based MCP server that provides database interaction capabil
 ### Tools
 
 - `arango_query` - Execute AQL queries
+
   - Takes an AQL query string as required parameter
   - Optionally accepts bind variables for parameterized queries
   - Returns query results as JSON
 
 - `arango_insert` - Insert documents into collections
+
   - Takes collection name and document object as required parameters
   - Automatically generates document key if not provided
   - Returns the created document metadata
 
 - `arango_update` - Update existing documents
+
   - Takes collection name, document key, and update object as required parameters
   - Returns the updated document metadata
 
 - `arango_remove` - Remove documents from collections
+
   - Takes collection name and document key as required parameters
   - Returns the removed document metadata
 
 - `arango_backup` - Backup all collections to JSON files
+
   - Takes output directory path as required parameter
   - Creates JSON files for each collection with current data
   - Useful for data backup and migration purposes
 
 - `arango_list_collections` - List all collections in the database
+
   - Returns array of collection information including names, IDs, and types
 
 - `arango_create_collection` - Create a new collection in the database
@@ -65,32 +71,34 @@ npx arango-server
 To use `arango-server` with the VSCode Copilot agent, you must have at least **VSCode 1.99.0 installed** and follow these steps:
 
 1. **Create or edit the MCP configuration file**:
+
    - **Workspace-specific configuration**: Create or edit the `.vscode/mcp.json` file in your workspace.
    - **User-specific configuration**: Optionally, specify the server in the [setting(mcp)](vscode://settings/mcp) VS Code [user settings](https://code.visualstudio.com/docs/getstarted/personalize-vscode#_configure-settings) to enable the MCP server across all workspaces.
 
-    *Tip: You can refer [here](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) to the MCP configuration documentation of VSCode for more details on how to set up the configuration file.*
+     _Tip: You can refer [here](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) to the MCP configuration documentation of VSCode for more details on how to set up the configuration file._
 
 2. **Add the following configuration**:
 
-    ```json
-    {
-        "servers": {
-            "arango-mcp": {
-                "type": "stdio",
-                "command": "npx",
-                "args": ["arango-server"],
-                "env": {
-                    "ARANGO_URL": "http://localhost:8529",
-                    "ARANGO_DB": "v20",
-                    "ARANGO_USERNAME": "app",
-                    "ARANGO_PASSWORD": "75Sab@MYa3Dj8Fc"
-                }
-            }
-        }
-    }
-    ```
+   ```json
+   {
+   	"servers": {
+   		"arango-mcp": {
+   			"type": "stdio",
+   			"command": "npx",
+   			"args": ["arango-server"],
+   			"env": {
+   				"ARANGO_URL": "http://localhost:8529",
+   				"ARANGO_DB": "v20",
+   				"ARANGO_USERNAME": "app",
+   				"ARANGO_PASSWORD": "75Sab@MYa3Dj8Fc"
+   			}
+   		}
+   	}
+   }
+   ```
 
 3. **Start the MCP server**:
+
    - Open the Command Palette in VSCode (`Ctrl+Shift+P` or `Cmd+Shift+P` on Mac).
    - Run the command `MCP: Start Server` and select `arango-mcp` from the list.
 
@@ -124,18 +132,18 @@ Add the following configuration to the `mcpServers` section:
 
 ```json
 {
-  "mcpServers": {
-    "arango": {
-      "command": "node",
-      "args": ["/path/to/arango-server/build/index.js"],
-      "env": {
-        "ARANGO_URL": "your_database_url",
-        "ARANGO_DB": "your_database_name",
-        "ARANGO_USERNAME": "your_username",
-        "ARANGO_PASSWORD": "your_password"
-      }
-    }
-  }
+	"mcpServers": {
+		"arango": {
+			"command": "node",
+			"args": ["/path/to/arango-server/build/index.js"],
+			"env": {
+				"ARANGO_URL": "your_database_url",
+				"ARANGO_DB": "your_database_name",
+				"ARANGO_USERNAME": "your_username",
+				"ARANGO_PASSWORD": "your_password"
+			}
+		}
+	}
 }
 ```
 
@@ -212,7 +220,8 @@ Remove a document:
 List all collections:
 
 ```typescript
-{} // No parameters required
+{
+} // No parameters required
 ```
 
 Backup database collections:
@@ -230,31 +239,37 @@ Create a new collection:
 ```typescript
 {
   "name": "products",
-  "type": 2, // 2 for document collection, 3 for edge collection (optional, defaults to document collection)
+  "type": "document", // "document" or "edge" (optional, defaults to "document")
   "waitForSync": false // Optional, defaults to false
 }
 ```
 
 Note: The server is database-structure agnostic and can work with any collection names or structures as long as they follow ArangoDB's document and edge collection models.
 
+## Disclaimer
+
+### For Development Use Only
+
+This tool is designed for local development environments only. While technically it could connect to a production database, this would create significant security risks and is explicitly discouraged. We use it exclusively with our development databases to maintain separation of concerns and protect production data.
+
 ## Development
 
 1. Clone the repository
 2. Install dependencies:
 
-    ```bash
-    npm run build
-    ```
+   ```bash
+   npm run build
+   ```
 
 3. For development with auto-rebuild:
 
-    ```bash
-    npm run watch
-    ```
+   ```bash
+   npm run watch
+   ```
 
 ### Debugging
 
-Since MCP servers communicate over stdio, debugging can be challenging.  recommended debugging can be done by using [MCP Inspector](https://github.com/modelcontextprotocol/inspector) for development:
+Since MCP servers communicate over stdio, debugging can be challenging. recommended debugging can be done by using [MCP Inspector](https://github.com/modelcontextprotocol/inspector) for development:
 
 ```bash
 npm run inspector
