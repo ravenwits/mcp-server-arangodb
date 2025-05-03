@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/ravenwits-mcp-server-arangodb-badge.png)](https://mseep.ai/app/ravenwits-mcp-server-arangodb)
+
 # MCP Server for ArangoDB
 
 [![smithery badge](https://smithery.ai/badge/@ravenwits/mcp-server-arangodb)](https://smithery.ai/server/@ravenwits/mcp-server-arangodb)
