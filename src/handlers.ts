@@ -165,22 +165,19 @@ export class ToolHandlers {
 							}
 						}
 
-						if (collection) {
-							// Backup single collection
-							console.info(`Backing up collection: ${collection}`);
-							results.push(await backupCollection(this.db, outputDir, collection, docLimit));
-						} else {
-							// Backup all collections in parallel chunks
-							const collections = await this.db.listCollections();
-							console.info(`Found ${collections.length} collections to backup.`);
+					if (collection) {
+						// Backup single collection
+						results.push(await backupCollection(this.db, outputDir, collection, docLimit));
+					} else {
+						// Backup all collections in parallel chunks
+						const collections = await this.db.listCollections();
 
-							// Process collections in chunks
-							for (let i = 0; i < collections.length; i += PARALLEL_BACKUP_CHUNKS) {
-								const chunk = collections.slice(i, i + PARALLEL_BACKUP_CHUNKS);
-								const backupPromises = chunk.map((collection) => {
-									console.info(`Backing up collection: ${collection.name}`);
-									return backupCollection(this.db, outputDir, collection.name, docLimit);
-								});
+						// Process collections in chunks
+						for (let i = 0; i < collections.length; i += PARALLEL_BACKUP_CHUNKS) {
+							const chunk = collections.slice(i, i + PARALLEL_BACKUP_CHUNKS);
+							const backupPromises = chunk.map((collection) => {
+								return backupCollection(this.db, outputDir, collection.name, docLimit);
+							});
 
 								// Wait for the current chunk to complete before processing the next
 								const chunkResults = await Promise.all(backupPromises);

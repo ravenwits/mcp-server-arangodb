@@ -81,19 +81,19 @@ To use `arango-server` with the VSCode Copilot agent, you must have at least **V
 
    ```json
    {
-   	"servers": {
-   		"arango-mcp": {
-   			"type": "stdio",
-   			"command": "npx",
-   			"args": ["arango-server"],
-   			"env": {
-   				"ARANGO_URL": "http://localhost:8529",
-   				"ARANGO_DB": "v20",
-   				"ARANGO_USERNAME": "app",
-   				"ARANGO_PASSWORD": "75Sab@MYa3Dj8Fc"
-   			}
-   		}
-   	}
+     "servers": {
+       "arango-mcp": {
+         "type": "stdio",
+         "command": "npx",
+         "args": ["arango-server"],
+         "env": {
+           "ARANGO_URL": "http://localhost:8529/_db",
+           "ARANGO_DB": "your_database_name",
+           "ARANGO_USERNAME": "your_username",
+           "ARANGO_PASSWORD": "your_password"
+         }
+       }
+     }
    }
    ```
 
@@ -121,6 +121,8 @@ Go to: `Settings > Developer > Edit Config` or
 - MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 
+You can check out mcp [documentation](https://modelcontextprotocol.io/docs/develop/connect-local-servers) to set it up too.
+
 #### To use with Cline VSCode Extension
 
 Go to: `Cline Extension > MCP Servers > Edit Configuration` or
@@ -132,18 +134,18 @@ Add the following configuration to the `mcpServers` section:
 
 ```json
 {
-	"mcpServers": {
-		"arango": {
-			"command": "node",
-			"args": ["/path/to/arango-server/build/index.js"],
-			"env": {
-				"ARANGO_URL": "your_database_url",
-				"ARANGO_DB": "your_database_name",
-				"ARANGO_USERNAME": "your_username",
-				"ARANGO_PASSWORD": "your_password"
-			}
-		}
-	}
+  "mcpServers": {
+    "arango": {
+      "command": "node",
+      "args": ["/path/to/arango-server/build/index.js"],
+      "env": {
+        "ARANGO_URL": "your_database_url",
+        "ARANGO_DB": "your_database_name",
+        "ARANGO_USERNAME": "your_username",
+        "ARANGO_PASSWORD": "your_password"
+      }
+    }
+  }
 }
 ```
 
