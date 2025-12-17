@@ -6,6 +6,7 @@ export function createToolDefinitions(): Tool[] {
 		{
 			name: API_TOOLS.QUERY as string,
 			description: 'Execute an AQL query',
+			readOnlyHint: false,
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -25,6 +26,7 @@ export function createToolDefinitions(): Tool[] {
 		{
 			name: API_TOOLS.INSERT as string,
 			description: 'Insert a document into a collection',
+			destructiveHint: true,
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -44,6 +46,7 @@ export function createToolDefinitions(): Tool[] {
 		{
 			name: API_TOOLS.UPDATE as string,
 			description: 'Update a document in a collection',
+			destructiveHint: true,
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -67,6 +70,7 @@ export function createToolDefinitions(): Tool[] {
 		{
 			name: API_TOOLS.REMOVE as string,
 			description: 'Remove a document from a collection',
+			destructiveHint: true,
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -85,6 +89,7 @@ export function createToolDefinitions(): Tool[] {
 		{
 			name: API_TOOLS.BACKUP as string,
 			description: 'Backup collections to JSON files.',
+			readOnlyHint: true,
 			inputSchema: {
 				type: 'object',
 				properties: {
@@ -111,6 +116,7 @@ export function createToolDefinitions(): Tool[] {
 		{
 			name: API_TOOLS.COLLECTIONS as string,
 			description: 'List all collections in the database',
+			readOnlyHint: true,
 			inputSchema: {
 				type: 'object',
 				properties: {},
@@ -119,6 +125,7 @@ export function createToolDefinitions(): Tool[] {
 		{
 			name: API_TOOLS.CREATE_COLLECTION as string,
 			description: 'Create a new collection in the database',
+			destructiveHint: true,
 			inputSchema: {
 				type: 'object',
 				properties: {
