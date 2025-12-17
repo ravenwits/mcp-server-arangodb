@@ -1,6 +1,6 @@
 # MCP Server for ArangoDB
 
-[![smithery badge](https://smithery.ai/badge/@ravenwits/mcp-server-arangodb)](https://smithery.ai/server/@ravenwits/mcp-server-arangodb)
+[<img src="./assets/arango_logo.svg" width="240"/>](./assets/arango_logo.svg)
 
 A Model Context Protocol server for ArangoDB
 
@@ -105,14 +105,6 @@ To use `arango-server` with the VSCode Copilot agent, you must have at least **V
 4. **Verify the server**:
    - Open the Chat view in VSCode and switch to Agent mode.
    - Use the `Tools` button to verify that the `arango-server` tools are available.
-
-### Installing via Smithery
-
-To install ArangoDB for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@ravenwits/mcp-server-arangodb):
-
-```bash
-npx -y @smithery/cli install @ravenwits/mcp-server-arangodb --client claude
-```
 
 #### To use with Claude Desktop
 
