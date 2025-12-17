@@ -87,7 +87,7 @@ To use `arango-server` with the VSCode Copilot agent, you must have at least **V
          "command": "npx",
          "args": ["arango-server"],
          "env": {
-           "ARANGO_URL": "http://localhost:8529/_db",
+           "ARANGO_URL": "http://localhost:8529",
            "ARANGO_DB": "your_database_name",
            "ARANGO_USERNAME": "your_username",
            "ARANGO_PASSWORD": "your_password"
