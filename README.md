@@ -2,7 +2,7 @@
 
 [<img src="./assets/arango_logo.svg" width="240"/>](./assets/arango_logo.svg)
 
-A Model Context Protocol server for ArangoDB
+A Model Context Protocol server for [ArangoDB](https://arango.ai/products/arangodb)
 
 This is a TypeScript-based MCP server that provides database interaction capabilities through ArangoDB. It implements core database operations and allows seamless integration with ArangoDB through MCP tools. You can use it wih Claude app and also extension for VSCode that works with mcp like Cline!
 
