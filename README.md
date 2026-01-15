@@ -1,6 +1,6 @@
 # MCP Server for ArangoDB
 
-[<img src="./assets/arango_logo.svg" width="240"/>](./assets/arango_logo.svg)
+[<img src="./assets/cover.webp" width="420" alt="ArangoDB MCP Server"/>](./assets/cover.webp)
 
 A Model Context Protocol server for [ArangoDB](https://arango.ai/products/arangodb)
 
@@ -141,6 +141,7 @@ Add the following configuration to the `mcpServers` section:
 }
 ```
 
+You can also use the above configuration to get this server working with [WARP](https://docs.warp.dev/knowledge-and-collaboration/mcp)
 ### Environment Variables
 
 The server requires the following environment variables:
