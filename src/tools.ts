@@ -1,167 +1,293 @@
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 
+const jsonValueSchema = {
+  anyOf: [
+    { type: "string" },
+    { type: "number" },
+    { type: "boolean" },
+    { type: "null" },
+    { type: "array", items: {} },
+    { type: "object", additionalProperties: true },
+  ],
+};
+
+const objectSchema = {
+  type: "object",
+  additionalProperties: jsonValueSchema,
+};
+
+const collectionNameSchema = {
+  type: "string",
+  pattern: "^[A-Za-z][A-Za-z0-9_-]*$",
+  description: "ArangoDB collection name, for example users or product_edges",
+};
+
+const metadataSchema = {
+  type: "object",
+  properties: {
+    _id: { type: "string" },
+    _key: { type: "string" },
+    _rev: { type: "string" },
+  },
+  additionalProperties: true,
+};
+
 export function createToolDefinitions(): Tool[] {
   return [
-		{
-			name: API_TOOLS.QUERY as string,
-			description: 'Execute an AQL query',
-			annotations: {
-				readOnlyHint: false,
-			},
-			inputSchema: {
+    {
+      name: API_TOOLS.QUERY,
+      description:
+        "Execute an AQL query and return up to the requested limit of rows. Use bindVars for parameters.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+      inputSchema: {
         type: "object",
         properties: {
           query: {
             type: "string",
-            description: "AQL query string",
+            description: "AQL query string, for example FOR doc IN users RETURN doc",
           },
           bindVars: {
-            type: "object",
-            description: "Query bind variables",
-            additionalProperties: { type: "object" },
+            ...objectSchema,
+            description: "AQL bind variables, for example {\"name\": \"Alice\"}",
+          },
+          limit: {
+            type: "integer",
+            minimum: 1,
+            maximum: 1000,
+            default: 100,
+            description: "Maximum rows to return from the cursor",
           },
         },
         required: ["query"],
       },
-    },
-		{
-			name: API_TOOLS.INSERT as string,
-			description: 'Insert a document into a collection',
-			annotations: {
-				destructiveHint: true,
-			},
-			inputSchema: {
+      outputSchema: {
         type: "object",
         properties: {
-          collection: {
-            type: "string",
-            description: "Collection name",
-          },
+          rows: { type: "array", items: {} },
+          count: { type: "integer" },
+          hasMore: { type: "boolean" },
+          limit: { type: "integer" },
+        },
+        required: ["rows", "count", "hasMore", "limit"],
+      },
+    },
+    {
+      name: API_TOOLS.INSERT,
+      description: "Insert a document into a collection and return document metadata.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+      inputSchema: {
+        type: "object",
+        properties: {
+          collection: collectionNameSchema,
           document: {
-            type: "object",
-            description: "Document to insert",
-            additionalProperties: { type: "object" },
+            ...objectSchema,
+            description: "Document to insert, for example {\"name\": \"Alice\"}",
           },
         },
         required: ["collection", "document"],
       },
+      outputSchema: {
+        type: "object",
+        properties: { document: metadataSchema },
+        required: ["document"],
+      },
     },
-		{
-			name: API_TOOLS.UPDATE as string,
-			description: 'Update a document in a collection',
-			annotations: {
-				destructiveHint: true,
-			},
-			inputSchema: {
+    {
+      name: API_TOOLS.UPDATE,
+      description: "Update a document in a collection by key and return metadata.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+      inputSchema: {
         type: "object",
         properties: {
-          collection: {
-            type: "string",
-            description: "Collection name",
-          },
-          key: {
-            type: "string",
-            description: "Document key",
-          },
+          collection: collectionNameSchema,
+          key: { type: "string", minLength: 1, description: "Document _key" },
           update: {
-            type: "object",
-            description: "Update object",
-            additionalProperties: { type: "object" },
+            ...objectSchema,
+            description: "Partial update object, for example {\"status\": \"active\"}",
           },
         },
         required: ["collection", "key", "update"],
       },
+      outputSchema: {
+        type: "object",
+        properties: { document: metadataSchema },
+        required: ["document"],
+      },
     },
-		{
-			name: API_TOOLS.REMOVE as string,
-			description: 'Remove a document from a collection',
-			annotations: {
-				destructiveHint: true,
-			},
-			inputSchema: {
+    {
+      name: API_TOOLS.REMOVE,
+      description: "Remove a document from a collection by key and return metadata.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+      inputSchema: {
         type: "object",
         properties: {
-          collection: {
-            type: "string",
-            description: "Collection name",
-          },
-          key: {
-            type: "string",
-            description: "Document key",
-          },
+          collection: collectionNameSchema,
+          key: { type: "string", minLength: 1, description: "Document _key" },
         },
         required: ["collection", "key"],
       },
+      outputSchema: {
+        type: "object",
+        properties: { document: metadataSchema },
+        required: ["document"],
+      },
     },
-		{
-			name: API_TOOLS.BACKUP as string,
-			description: 'Backup collections to JSON files.',
-			annotations: {
-				readOnlyHint: true,
-			},
-			inputSchema: {
+    {
+      name: API_TOOLS.BACKUP,
+      description:
+        "Backup collections to JSON files under ARANGO_BACKUP_ROOT. outputDir must be a safe relative directory name.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+      inputSchema: {
         type: "object",
         properties: {
           outputDir: {
             type: "string",
-            description: "An absolute directory path to store backup files",
-            default: "./backup",
-            optional: true,
+            pattern: "^[A-Za-z0-9_-]+$",
+            default: "default",
+            description:
+              "Safe subdirectory name under ARANGO_BACKUP_ROOT. Absolute paths, slashes, and .. are rejected.",
           },
           collection: {
-            type: "string",
-            description:
-              "Collection name to backup. If not provided, backs up all collections.",
-            optional: true,
+            ...collectionNameSchema,
+            description: "Collection name to backup. If omitted, backs up all collections.",
           },
           docLimit: {
             type: "integer",
-            description:
-              "Limit the number of documents to backup. If not provided, backs up all documents.",
-            optional: true,
+            minimum: 1,
+            maximum: 10000,
+            default: 1000,
+            description: "Maximum documents to backup per collection",
           },
         },
-        required: ["outputDir"],
+      },
+      outputSchema: {
+        type: "object",
+        properties: {
+          status: { type: "string" },
+          backupRoot: { type: "string" },
+          outputDirectory: { type: "string" },
+          results: { type: "array", items: { type: "object", additionalProperties: true } },
+        },
+        required: ["status", "backupRoot", "outputDirectory", "results"],
       },
     },
-		{
-			name: API_TOOLS.COLLECTIONS as string,
-			description: 'List all collections in the database',
-			annotations: {
-				readOnlyHint: true,
-			},
-			inputSchema: {
+    {
+      name: API_TOOLS.COLLECTIONS,
+      description: "List all collections in the selected database.",
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+      inputSchema: {
         type: "object",
         properties: {},
       },
-    },
-		{
-			name: API_TOOLS.CREATE_COLLECTION as string,
-			description: 'Create a new collection in the database',
-			annotations: {
-				destructiveHint: true,
-			},
-			inputSchema: {
+      outputSchema: {
         type: "object",
         properties: {
-          name: {
-            type: "string",
-            description: "Name of the collection to create",
-          },
+          collections: { type: "array", items: { type: "object", additionalProperties: true } },
+          count: { type: "integer" },
+        },
+        required: ["collections", "count"],
+      },
+    },
+    {
+      name: API_TOOLS.CREATE_COLLECTION,
+      description: "Create a document or edge collection in the selected database.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+      inputSchema: {
+        type: "object",
+        properties: {
+          name: collectionNameSchema,
           type: {
             type: "string",
-            description: 'Type of collection to create ("document" or "edge")',
+            description: 'Collection type: "document" or "edge"',
             default: "document",
             enum: ["document", "edge"],
           },
           waitForSync: {
             type: "boolean",
-            description:
-              "If true, wait for data to be synchronized to disk before returning",
+            description: "If true, wait for data synchronization before returning",
             default: false,
           },
         },
         required: ["name"],
+      },
+      outputSchema: {
+        type: "object",
+        properties: {
+          collection: { type: "object", additionalProperties: true },
+        },
+        required: ["collection"],
+      },
+    },
+    {
+      name: API_TOOLS.DROP_COLLECTION,
+      description: "Drop an existing collection from the selected database.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+      inputSchema: {
+        type: "object",
+        properties: {
+          name: collectionNameSchema,
+          confirm: {
+            type: "boolean",
+            const: true,
+            description:
+              "Must be true to confirm permanent deletion of the collection and all documents.",
+          },
+        },
+        required: ["name", "confirm"],
+      },
+      outputSchema: {
+        type: "object",
+        properties: {
+          collection: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              dropped: { type: "boolean" },
+            },
+            required: ["name", "dropped"],
+          },
+        },
+        required: ["collection"],
       },
     },
   ];
@@ -175,4 +301,5 @@ export enum API_TOOLS {
   BACKUP = "arango_backup",
   COLLECTIONS = "arango_list_collections",
   CREATE_COLLECTION = "arango_create_collection",
+  DROP_COLLECTION = "arango_drop_collection",
 }

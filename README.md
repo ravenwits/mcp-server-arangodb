@@ -14,7 +14,8 @@ This is a TypeScript-based MCP server that provides database interaction capabil
 
   - Takes an AQL query string as required parameter
   - Optionally accepts bind variables for parameterized queries
-  - Returns query results as JSON
+  - Accepts an optional `limit` parameter, capped at 1000 rows
+  - Returns query results as JSON text and structured MCP content
 
 - `arango_insert` - Insert documents into collections
 
@@ -34,8 +35,9 @@ This is a TypeScript-based MCP server that provides database interaction capabil
 
 - `arango_backup` - Backup all collections to JSON files
 
-  - Takes output directory path as required parameter
-  - Creates JSON files for each collection with current data
+  - Writes only under `ARANGO_BACKUP_ROOT` to prevent arbitrary file writes
+  - Accepts only a safe relative `outputDir` name, such as `nightly_1`
+  - Creates JSON files for each collection with current data and refuses to overwrite existing files
   - Useful for data backup and migration purposes
 
 - `arango_list_collections` - List all collections in the database
@@ -47,6 +49,12 @@ This is a TypeScript-based MCP server that provides database interaction capabil
   - Optionally specify collection type (document or edge collection)
   - Configure waitForSync behavior for write operations
   - Returns collection information including name, type, and status
+
+- `arango_drop_collection` - Drop an existing collection from the database
+  - Takes collection name as required parameter
+  - Requires `confirm: true` to reduce accidental destructive calls
+  - Permanently removes the collection and its documents
+  - Returns the dropped collection name and status
 
 ## Installation
 
@@ -150,6 +158,7 @@ The server requires the following environment variables:
 - `ARANGO_DB` - Database name
 - `ARANGO_USERNAME` - Database user
 - `ARANGO_PASSWORD` - Database password
+- `ARANGO_BACKUP_ROOT` - Optional root directory for `arango_backup` output. Defaults to `./backups`.
 
 ## Usage
 
@@ -175,7 +184,8 @@ Query all users:
 
 ```typescript
 {
-  "query": "FOR user IN users RETURN user"
+  "query": "FOR user IN users RETURN user",
+  "limit": 100
 }
 ```
 
@@ -223,11 +233,13 @@ Backup database collections:
 
 ```typescript
 {
-  "outputDir": "./backup" // Specify an absolute output directory path for the backup files (optional)
-  "collection": "users" // Specify a collection name to backup (optional) If no collection name is provided, all collections will be backed up
-  "docLimit": 1000 // Specify the maximum number of documents to backup per collection (optional), if not provided, all documents will be backed up (not having a limit might cause timeout for large collections)
+  "outputDir": "nightly_1", // Safe subdirectory name under ARANGO_BACKUP_ROOT. Absolute paths and slashes are rejected.
+  "collection": "users", // Optional. If omitted, all collections are backed up.
+  "docLimit": 1000 // Optional. Maximum documents per collection. Defaults to 1000 and is capped at 10000.
 }
 ```
+
+Set `ARANGO_BACKUP_ROOT` to choose where backups are stored. The server rejects path traversal, absolute paths, symlink escapes, and existing output files to mitigate arbitrary file write risks.
 
 Create a new collection:
 
@@ -236,6 +248,15 @@ Create a new collection:
   "name": "products",
   "type": "document", // "document" or "edge" (optional, defaults to "document")
   "waitForSync": false // Optional, defaults to false
+}
+```
+
+Drop a collection:
+
+```typescript
+{
+  "name": "products",
+  "confirm": true
 }
 ```
 
@@ -271,6 +292,24 @@ npm run inspector
 ```
 
 The Inspector will provide a URL to access debugging tools in your browser.
+
+### Testing
+
+```bash
+npm test
+```
+
+The test suite includes regression coverage for the `arango_backup` path handling that prevents absolute paths, traversal, and symlink escapes.
+
+To run the integration smoke test with a local Docker ArangoDB instance:
+
+```bash
+npm run test:integration
+```
+
+The integration test starts a temporary Docker ArangoDB instance, starts the MCP server over stdio, lists tools, verifies `outputSchema`, creates a temporary collection, inserts documents, queries with `limit`, verifies backup output stays under `ARANGO_BACKUP_ROOT`, rejects an absolute backup path, cleans up the collection, and stops the container.
+
+The test container uses host port `18529` by default to avoid conflicting with a local ArangoDB on `8529`. Override it with `ARANGO_PORT` if needed.
 
 ## License
 

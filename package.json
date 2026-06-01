@@ -1,13 +1,17 @@
 {
   "name": "arango-server",
-  "version": "0.4.7",
+  "version": "0.5.0",
   "description": "A Model Context Protocol Server for ArangoDB",
   "type": "module",
   "bin": {
     "arango-server": "./build/index.js"
   },
   "files": [
-    "build"
+    "build/backupPaths.js",
+    "build/handlers.js",
+    "build/index.js",
+    "build/tools.js",
+    "build/types.js"
   ],
   "scripts": {
     "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
@@ -16,9 +20,10 @@
     "inspector": "npx @modelcontextprotocol/inspector build/index.js",
     "dev": "tsc --watch",
     "start": "node build/index.js",
-    "test": "jest",
-    "lint": "eslint . --ext .ts",
-    "format": "prettier --write \"src/**/*.ts\""
+    "test": "npm run build && node --test build/*.test.js",
+    "test:integration": "bash scripts/test-integration-docker.sh",
+    "lint": "tsc --noEmit",
+    "format": "npx prettier --write \"src/**/*.ts\""
   },
   "keywords": [
     "arango",
@@ -34,12 +39,12 @@
   "author": "Alp Sarıyer <hi@alpsariyer.dev>",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.24.3",
-    "arangojs": "^10.1.2",
-    "zod": "^4.2.1"
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "arangojs": "^10.3.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/node": "^24.1.0",
-    "typescript": "^5.9.3"
+    "@types/node": "^25.9.1",
+    "typescript": "^6.0.3"
   }
 }

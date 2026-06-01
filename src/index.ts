@@ -3,7 +3,6 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
-  ListResourcesRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { Database } from "arangojs";
@@ -36,14 +35,11 @@ if (!ARANGO_USERNAME || !ARANGO_PASSWORD) {
 
 class ArangoServer {
   private server: Server;
-  private db!: Database; // Using definite assignment assertion
   private isConnected: boolean = false;
   private reconnectionAttempts: number = 0;
   private toolHandlers: ToolHandlers;
 
-  constructor() {
-    this.initializeDatabase();
-
+  private constructor(private db: Database) {
     // Initialize MCP server
     this.server = new Server(
       {
@@ -53,7 +49,6 @@ class ArangoServer {
       {
         capabilities: {
           tools: {},
-          resources: {},
         },
       }
     );
@@ -72,22 +67,26 @@ class ArangoServer {
     this.server.setRequestHandler(CallToolRequestSchema, (request) =>
       this.toolHandlers.handleCallTool(request)
     );
-    this.server.setRequestHandler(ListResourcesRequestSchema, async () => ({
-      resources: [],
-    }));
-
     process.on("SIGINT", async () => {
       await this.server.close();
       process.exit(0);
     });
   }
 
+  static async create(): Promise<ArangoServer> {
+    const instance = new ArangoServer(ArangoServer.createDatabase());
+    await instance.initializeDatabase();
+    return instance;
+  }
+
+  private static createDatabase(): Database {
+    const db = new Database([ARANGO_URL]);
+    db.useBasicAuth(ARANGO_USERNAME, ARANGO_PASSWORD);
+    return db.database(ARANGO_DB);
+  }
+
   private async initializeDatabase() {
     try {
-      this.db = new Database([ARANGO_URL]);
-      this.db.useBasicAuth(ARANGO_USERNAME, ARANGO_PASSWORD);
-      this.db = this.db.database(ARANGO_DB);
-
       // Test connection
       await this.checkConnection();
       this.isConnected = true;
@@ -116,6 +115,7 @@ class ArangoServer {
     this.reconnectionAttempts++;
 
     await new Promise((resolve) => setTimeout(resolve, RECONNECTION_DELAY));
+    this.db = ArangoServer.createDatabase();
     await this.initializeDatabase();
   }
 
@@ -131,5 +131,9 @@ class ArangoServer {
   }
 }
 
-const server = new ArangoServer();
-server.run().catch(console.error);
+ArangoServer.create()
+  .then((server) => server.run())
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

@@ -1,4 +1,5 @@
 import {
+  CallToolResult,
   ErrorCode,
   McpError,
   Request,
@@ -11,18 +12,59 @@ import {
   CreateCollectionOptions,
 } from "arangojs/collections";
 import { promises as fs } from "fs";
-import { join, resolve } from "path";
+import { join } from "path";
+import { ZodError, ZodType } from "zod";
+import { getBackupRoot, resolveBackupOutputDir } from "./backupPaths.js";
 import { API_TOOLS } from "./tools.js";
 import {
-  BackupArgs,
-  CollectionDocumentArgs,
-  CollectionKeyArgs,
-  CreateCollectionArgs,
-  QueryArgs,
-  UpdateDocumentArgs,
+  backupArgsSchema,
+  collectionDocumentArgsSchema,
+  collectionKeyArgsSchema,
+  createCollectionArgsSchema,
+  dropCollectionArgsSchema,
+  queryArgsSchema,
+  updateDocumentArgsSchema,
 } from "./types.js";
 
 const PARALLEL_BACKUP_CHUNKS = 5;
+
+function toToolResponse(structuredContent: Record<string, unknown>): CallToolResult {
+  return {
+    content: [{ type: "text", text: JSON.stringify(structuredContent, null, 2) }],
+    structuredContent,
+  };
+}
+
+function parseArgs<T>(schema: ZodType<T>, args: unknown, toolName: string): T {
+  try {
+    return schema.parse(args ?? {});
+  } catch (error) {
+    if (error instanceof ZodError) {
+      const issues = error.issues
+        .map((issue) => `${issue.path.join(".") || "arguments"}: ${issue.message}`)
+        .join("; ");
+      throw new McpError(
+        ErrorCode.InvalidRequest,
+        `Invalid arguments for ${toolName}: ${issues}. Check the tool schema and retry with valid values.`
+      );
+    }
+    throw error;
+  }
+}
+
+async function readCursorRows<T>(
+  cursor: { next(): Promise<T | undefined>; hasNext: boolean },
+  limit: number
+): Promise<{ rows: T[]; hasMore: boolean }> {
+  const rows: T[] = [];
+  while (rows.length < limit) {
+    const row = await cursor.next();
+    if (row === undefined) break;
+    rows.push(row);
+  }
+
+  return { rows, hasMore: cursor.hasNext };
+}
 
 export class ToolHandlers {
   constructor(
@@ -37,87 +79,83 @@ export class ToolHandlers {
     };
   }
 
-  async handleCallTool(request: Request) {
+  async handleCallTool(request: Request): Promise<CallToolResult> {
     try {
       await this.ensureConnection();
 
-      switch (request.params?.name) {
+      const toolName = request.params?.name;
+      const rawArgs = request.params?.arguments;
+
+      switch (toolName) {
         case API_TOOLS.QUERY: {
-          const args = request.params.arguments as QueryArgs;
+          const args = parseArgs(queryArgsSchema, rawArgs, toolName);
           try {
-            const cursor = await this.db.query(args.query, args.bindVars || {});
-            const result = await cursor.all();
-            return {
-              content: [
-                { type: "text", text: JSON.stringify(result, null, 2) },
-              ],
-            };
+            const cursor = await this.db.query<unknown>(args.query, args.bindVars, {
+              batchSize: args.limit,
+              count: true,
+            });
+            const { rows, hasMore } = await readCursorRows(cursor, args.limit);
+            return toToolResponse({
+              rows,
+              count: rows.length,
+              totalCount: cursor.count,
+              hasMore,
+              limit: args.limit,
+            });
           } catch (error) {
             throw new McpError(
               ErrorCode.InvalidRequest,
               `Query execution failed: ${
                 error instanceof Error ? error.message : "Unknown error"
-              }`
+              }. Verify AQL syntax, collection names, and bindVars.`
             );
           }
         }
 
         case API_TOOLS.INSERT: {
-          const args = request.params.arguments as CollectionDocumentArgs;
+          const args = parseArgs(collectionDocumentArgsSchema, rawArgs, toolName);
           try {
             const coll = this.db.collection(args.collection);
             const result = await coll.save(args.document);
-            return {
-              content: [
-                { type: "text", text: JSON.stringify(result, null, 2) },
-              ],
-            };
+            return toToolResponse({ document: result });
           } catch (error) {
             throw new McpError(
               ErrorCode.InvalidRequest,
               `Insert operation failed: ${
                 error instanceof Error ? error.message : "Unknown error"
-              }`
+              }. Verify the collection exists and the document is valid JSON.`
             );
           }
         }
 
         case API_TOOLS.UPDATE: {
-          const args = request.params.arguments as UpdateDocumentArgs;
+          const args = parseArgs(updateDocumentArgsSchema, rawArgs, toolName);
           try {
             const coll = this.db.collection(args.collection);
             const result = await coll.update(args.key, args.update);
-            return {
-              content: [
-                { type: "text", text: JSON.stringify(result, null, 2) },
-              ],
-            };
+            return toToolResponse({ document: result });
           } catch (error) {
             throw new McpError(
               ErrorCode.InvalidRequest,
               `Update operation failed: ${
                 error instanceof Error ? error.message : "Unknown error"
-              }`
+              }. Verify the collection and document key exist.`
             );
           }
         }
 
         case API_TOOLS.REMOVE: {
-          const args = request.params.arguments as CollectionKeyArgs;
+          const args = parseArgs(collectionKeyArgsSchema, rawArgs, toolName);
           try {
             const coll = this.db.collection(args.collection);
             const result = await coll.remove(args.key);
-            return {
-              content: [
-                { type: "text", text: JSON.stringify(result, null, 2) },
-              ],
-            };
+            return toToolResponse({ document: result });
           } catch (error) {
             throw new McpError(
               ErrorCode.InvalidRequest,
               `Remove operation failed: ${
                 error instanceof Error ? error.message : "Unknown error"
-              }`
+              }. Verify the collection and document key exist.`
             );
           }
         }
@@ -125,112 +163,98 @@ export class ToolHandlers {
         case API_TOOLS.COLLECTIONS: {
           try {
             const collections = await this.db.listCollections();
-            return {
-              content: [
-                { type: "text", text: JSON.stringify(collections, null, 2) },
-              ],
-            };
+            return toToolResponse({ collections, count: collections.length });
           } catch (error) {
             throw new McpError(
               ErrorCode.InternalError,
               `Failed to list collections: ${
                 error instanceof Error ? error.message : "Unknown error"
-              }`
+              }. Verify ARANGO_DB and credentials.`
             );
           }
         }
 
         case API_TOOLS.CREATE_COLLECTION: {
-          const args = request.params.arguments as CreateCollectionArgs;
+          const args = parseArgs(createCollectionArgsSchema, rawArgs, toolName);
           try {
-            const options: CreateCollectionOptions & { type?: CollectionType } =
-              {
-                waitForSync: args.waitForSync || false,
-              };
-
-            // Map string type to CollectionType enum
-            if (args.type === "edge") {
-              options.type = CollectionType.EDGE_COLLECTION;
-            } else {
-              // Default to document collection
-              options.type = CollectionType.DOCUMENT_COLLECTION;
-            }
-
-            const collection = await this.db.createCollection(
-              args.name,
-              options as CreateCollectionOptions & {
-                type: typeof options.type extends CollectionType.EDGE_COLLECTION
-                  ? CollectionType.EDGE_COLLECTION
-                  : CollectionType.DOCUMENT_COLLECTION;
-              }
-            );
-
-            // Return a simplified response without circular references
+            const baseOptions: CreateCollectionOptions = {
+              waitForSync: args.waitForSync,
+            };
+            const collection =
+              args.type === "edge"
+                ? await this.db.createCollection(args.name, {
+                    ...baseOptions,
+                    type: CollectionType.EDGE_COLLECTION,
+                  })
+                : await this.db.createCollection(args.name, {
+                    ...baseOptions,
+                    type: CollectionType.DOCUMENT_COLLECTION,
+                  });
             const properties = await collection.properties();
+            const indexes = await collection.indexes();
             const response = {
               name: collection.name,
-              indexes: collection.indexes(),
+              indexes,
               type: CollectionType[properties.type],
               status: CollectionStatus[properties.status],
             };
 
-            return {
-              content: [
-                { type: "text", text: JSON.stringify(response, null, 2) },
-              ],
-            };
+            return toToolResponse({ collection: response });
           } catch (error) {
             throw new McpError(
               ErrorCode.InvalidRequest,
               `Failed to create collection: ${
                 error instanceof Error ? error.message : "Unknown error"
-              }`
+              }. Verify the name is unique and credentials allow collection creation.`
+            );
+          }
+        }
+
+        case API_TOOLS.DROP_COLLECTION: {
+          const args = parseArgs(dropCollectionArgsSchema, rawArgs, toolName);
+          try {
+            await this.db.collection(args.name).drop();
+            return toToolResponse({ collection: { name: args.name, dropped: true } });
+          } catch (error) {
+            throw new McpError(
+              ErrorCode.InvalidRequest,
+              `Failed to drop collection: ${
+                error instanceof Error ? error.message : "Unknown error"
+              }. Verify the collection exists, credentials allow collection deletion, and confirm is true.`
             );
           }
         }
 
         case API_TOOLS.BACKUP: {
-          const args = request.params.arguments as BackupArgs;
-          const outputDir = resolve(args.outputDir);
-          const collection = args.collection;
-          const docLimit = args.docLimit;
+          const args = parseArgs(backupArgsSchema, rawArgs, toolName);
 
           try {
-            await fs.mkdir(outputDir, { recursive: true, mode: 0o755 });
-          } catch (error) {
-            throw new McpError(
-              ErrorCode.InternalError,
-              `Failed to create backup directory: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`
-            );
-          }
-
-          try {
+            const outputDir = await resolveBackupOutputDir(args.outputDir);
             const results = [];
+
             async function backupCollection(
               db: Database,
               outputDir: string,
-              collection?: string,
-              docLimit?: number
+              collection: string,
+              docLimit: number
             ) {
               try {
-                const cursor = await db.query({
-                  query: docLimit
-                    ? "FOR doc IN @@collection LIMIT @limit RETURN doc"
-                    : "FOR doc IN @@collection RETURN doc",
-                  bindVars: {
-                    "@collection": collection,
-                    ...(docLimit && { limit: docLimit }),
-                  },
-                });
-                const data = await cursor.all();
+                const cursor = await db.query<unknown>(
+                  "FOR doc IN @@collection LIMIT @limit RETURN doc",
+                  { "@collection": collection, limit: docLimit },
+                  { batchSize: docLimit, count: true }
+                );
+                const { rows } = await readCursorRows(cursor, docLimit);
                 const filePath = join(outputDir, `${collection}.json`);
-                await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+                await fs.writeFile(filePath, JSON.stringify(rows, null, 2), {
+                  flag: "wx",
+                  mode: 0o640,
+                });
                 return {
                   collection,
                   status: "success",
-                  count: data.length,
+                  count: rows.length,
+                  totalCount: cursor.count,
                   outputFile: filePath,
                 };
               } catch (error) {
@@ -238,64 +262,42 @@ export class ToolHandlers {
                   collection,
                   status: "error",
                   error:
-                    error instanceof Error ? error.message : "Unknown error",
+                    error instanceof Error
+                      ? `${error.message}. Remove the existing backup file or use a new outputDir.`
+                      : "Unknown error",
                 };
               }
             }
 
-            if (collection) {
-              // Backup single collection
+            if (args.collection) {
               results.push(
-                await backupCollection(this.db, outputDir, collection, docLimit)
+                await backupCollection(this.db, outputDir, args.collection, args.docLimit)
               );
             } else {
-              // Backup all collections in parallel chunks
               const collections = await this.db.listCollections();
-
-              // Process collections in chunks
-              for (
-                let i = 0;
-                i < collections.length;
-                i += PARALLEL_BACKUP_CHUNKS
-              ) {
+              for (let i = 0; i < collections.length; i += PARALLEL_BACKUP_CHUNKS) {
                 const chunk = collections.slice(i, i + PARALLEL_BACKUP_CHUNKS);
-                const backupPromises = chunk.map((collection) => {
-                  return backupCollection(
-                    this.db,
-                    outputDir,
-                    collection.name,
-                    docLimit
-                  );
-                });
-
-                // Wait for the current chunk to complete before processing the next
-                const chunkResults = await Promise.all(backupPromises);
+                const chunkResults = await Promise.all(
+                  chunk.map((collection) =>
+                    backupCollection(this.db, outputDir, collection.name, args.docLimit)
+                  )
+                );
                 results.push(...chunkResults);
               }
             }
 
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: JSON.stringify(
-                    {
-                      status: "completed",
-                      outputDirectory: outputDir,
-                      results,
-                    },
-                    null,
-                    2
-                  ),
-                },
-              ],
-            };
+            return toToolResponse({
+              status: "completed",
+              backupRoot: getBackupRoot(),
+              outputDirectory: outputDir,
+              results,
+            });
           } catch (error) {
             throw new McpError(
-              ErrorCode.InternalError,
+              ErrorCode.InvalidRequest,
               `Backup failed: ${
                 error instanceof Error ? error.message : "Unknown error"
-              }`
+              }. Set ARANGO_BACKUP_ROOT to a writable safe directory and use a simple outputDir like nightly_2026_06_01.`
             );
           }
         }
@@ -303,17 +305,16 @@ export class ToolHandlers {
         default:
           throw new McpError(
             ErrorCode.MethodNotFound,
-            `Unknown tool: ${request.params?.name}`
+            `Unknown tool: ${toolName}. Call tools/list to inspect available ArangoDB tools.`
           );
       }
     } catch (error: unknown) {
       if (error instanceof McpError) throw error;
 
-      // Check if it's a connection error
       if (error instanceof Error && error.message.includes("connect")) {
         throw new McpError(
           ErrorCode.InternalError,
-          `Database connection lost: ${error.message}`
+          `Database connection lost: ${error.message}. Verify ARANGO_URL, network reachability, and credentials.`
         );
       }
 
@@ -321,7 +322,7 @@ export class ToolHandlers {
         ErrorCode.InternalError,
         `Database error: ${
           error instanceof Error ? error.message : "Unknown error"
-        }`
+        }. Check server logs and ArangoDB availability.`
       );
     }
   }

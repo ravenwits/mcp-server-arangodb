@@ -1,0 +1,42 @@
+<evaluation>
+  <qa_pair>
+    <question>Which MCP tool should be used to list all collections in the configured ArangoDB database without modifying data?</question>
+    <answer>arango_list_collections</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Which MCP tool should be used to run a read-only AQL query such as FOR doc IN users RETURN doc?</question>
+    <answer>arango_query</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What argument should be used with arango_query to keep returned rows bounded?</question>
+    <answer>limit</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What is the maximum allowed arango_query limit enforced by the server?</question>
+    <answer>1000</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What is the maximum number of documents arango_backup will write per collection by default?</question>
+    <answer>1000</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Which environment variable constrains the root directory for arango_backup output?</question>
+    <answer>ARANGO_BACKUP_ROOT</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Can arango_backup accept an absolute outputDir such as /tmp/backup?</question>
+    <answer>No</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Which field in a successful arango_query structured response contains the returned documents?</question>
+    <answer>rows</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Which field in a successful arango_query structured response indicates whether additional cursor rows were not returned because of the limit?</question>
+    <answer>hasMore</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Which MCP tool permanently removes an existing collection from the configured database?</question>
+    <answer>arango_drop_collection</answer>
+  </qa_pair>
+</evaluation>
