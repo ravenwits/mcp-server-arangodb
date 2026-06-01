@@ -14,7 +14,7 @@ const jsonValue: z.ZodType<unknown> = z.lazy(() =>
 export const collectionNameSchema = z
   .string()
   .min(1)
-  .regex(/^[A-Za-z][A-Za-z0-9_-]*$/, "Use a valid ArangoDB collection name");
+  .regex(/^_?[A-Za-z][A-Za-z0-9_-]*$/, "Use a valid ArangoDB collection name");
 
 export const queryArgsSchema = z.object({
   query: z.string().min(1, "AQL query is required"),

@@ -286,10 +286,15 @@ export class ToolHandlers {
               }
             }
 
+            const errorCount = results.filter((result) => result.status === "error").length;
+            const successCount = results.length - errorCount;
+
             return toToolResponse({
-              status: "completed",
+              status: errorCount > 0 ? "completed_with_errors" : "completed",
               backupRoot: getBackupRoot(),
               outputDirectory: outputDir,
+              successCount,
+              errorCount,
               results,
             });
           } catch (error) {

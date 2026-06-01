@@ -71,7 +71,7 @@ npm install -g arango-server
 To run `arango-server` directly without installation, use the following command:
 
 ```bash
-npx arango-server
+npx -y arango-server
 ```
 
 ### Configuring for VSCode Agent
@@ -93,7 +93,7 @@ To use `arango-server` with the VSCode Copilot agent, you must have at least **V
        "arango-mcp": {
          "type": "stdio",
          "command": "npx",
-         "args": ["arango-server"],
+         "args": ["-y", "arango-server"],
          "env": {
            "ARANGO_URL": "http://localhost:8529",
            "ARANGO_DB": "your_database_name",
@@ -123,6 +123,31 @@ Go to: `Settings > Developer > Edit Config` or
 
 You can check out mcp [documentation](https://modelcontextprotocol.io/docs/develop/connect-local-servers) to set it up too.
 
+#### To use with OpenCode
+
+Add the following configuration to your OpenCode config file, such as `opencode.json` or `opencode.jsonc`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "arango": {
+      "type": "local",
+      "command": ["npx", "-y", "arango-server"],
+      "enabled": true,
+      "environment": {
+        "ARANGO_URL": "your_database_url",
+        "ARANGO_DB": "your_database_name",
+        "ARANGO_USERNAME": "your_username",
+        "ARANGO_PASSWORD": "your_password"
+      }
+    }
+  }
+}
+```
+
+After restarting OpenCode, ask it to use the `arango` MCP tools for ArangoDB tasks.
+
 #### To use with Cline VSCode Extension
 
 Go to: `Cline Extension > MCP Servers > Edit Configuration` or
@@ -136,8 +161,8 @@ Add the following configuration to the `mcpServers` section:
 {
   "mcpServers": {
     "arango": {
-      "command": "node",
-      "args": ["/path/to/arango-server/build/index.js"],
+      "command": "npx",
+      "args": ["-y", "arango-server"],
       "env": {
         "ARANGO_URL": "your_database_url",
         "ARANGO_DB": "your_database_name",

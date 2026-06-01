@@ -18,8 +18,8 @@ const objectSchema = {
 
 const collectionNameSchema = {
   type: "string",
-  pattern: "^[A-Za-z][A-Za-z0-9_-]*$",
-  description: "ArangoDB collection name, for example users or product_edges",
+  pattern: "^_?[A-Za-z][A-Za-z0-9_-]*$",
+  description: "ArangoDB collection name, for example users, _users, or product_edges",
 };
 
 const metadataSchema = {
@@ -70,10 +70,11 @@ export function createToolDefinitions(): Tool[] {
         properties: {
           rows: { type: "array", items: {} },
           count: { type: "integer" },
+          totalCount: { anyOf: [{ type: "integer" }, { type: "null" }] },
           hasMore: { type: "boolean" },
           limit: { type: "integer" },
         },
-        required: ["rows", "count", "hasMore", "limit"],
+        required: ["rows", "count", "totalCount", "hasMore", "limit"],
       },
     },
     {
@@ -81,7 +82,7 @@ export function createToolDefinitions(): Tool[] {
       description: "Insert a document into a collection and return document metadata.",
       annotations: {
         readOnlyHint: false,
-        destructiveHint: true,
+        destructiveHint: false,
         idempotentHint: false,
         openWorldHint: true,
       },
@@ -191,9 +192,11 @@ export function createToolDefinitions(): Tool[] {
           status: { type: "string" },
           backupRoot: { type: "string" },
           outputDirectory: { type: "string" },
+          successCount: { type: "integer" },
+          errorCount: { type: "integer" },
           results: { type: "array", items: { type: "object", additionalProperties: true } },
         },
-        required: ["status", "backupRoot", "outputDirectory", "results"],
+        required: ["status", "backupRoot", "outputDirectory", "successCount", "errorCount", "results"],
       },
     },
     {
@@ -223,7 +226,7 @@ export function createToolDefinitions(): Tool[] {
       description: "Create a document or edge collection in the selected database.",
       annotations: {
         readOnlyHint: false,
-        destructiveHint: true,
+        destructiveHint: false,
         idempotentHint: false,
         openWorldHint: true,
       },

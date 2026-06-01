@@ -1,42 +1,42 @@
 <evaluation>
   <qa_pair>
-    <question>Which MCP tool should be used to list all collections in the configured ArangoDB database without modifying data?</question>
-    <answer>arango_list_collections</answer>
+    <question>Using only read-only ArangoDB MCP tools, list collections whose names start with mcp_eval_, then query the evaluation orders and customers. Which customer name has the highest total value across non-cancelled orders?</question>
+    <answer>Ada Lovelace</answer>
   </qa_pair>
   <qa_pair>
-    <question>Which MCP tool should be used to run a read-only AQL query such as FOR doc IN users RETURN doc?</question>
-    <answer>arango_query</answer>
+    <question>Using read-only tools, inspect mcp_eval_products and mcp_eval_orders. Which product SKU has the largest total shipped quantity?</question>
+    <answer>DRIVER-003</answer>
   </qa_pair>
   <qa_pair>
-    <question>What argument should be used with arango_query to keep returned rows bounded?</question>
-    <answer>limit</answer>
+    <question>Using read-only tools, join mcp_eval_orders with mcp_eval_customers. What tier is associated with the customer who placed order_1002?</question>
+    <answer>gold</answer>
   </qa_pair>
   <qa_pair>
-    <question>What is the maximum allowed arango_query limit enforced by the server?</question>
-    <answer>1000</answer>
+    <question>Using read-only tools, query mcp_eval_shipments and mcp_eval_orders. Which order key is shipped but not yet delivered?</question>
+    <answer>order_1003</answer>
   </qa_pair>
   <qa_pair>
-    <question>What is the maximum number of documents arango_backup will write per collection by default?</question>
-    <answer>1000</answer>
+    <question>Using read-only tools, compare mcp_eval_products stock with ordered quantities across all non-cancelled orders. Which product has the least remaining stock after subtracting non-cancelled ordered quantity?</question>
+    <answer>Backup Vault</answer>
   </qa_pair>
   <qa_pair>
-    <question>Which environment variable constrains the root directory for arango_backup output?</question>
-    <answer>ARANGO_BACKUP_ROOT</answer>
+    <question>Using read-only tools, query mcp_eval_orders and mcp_eval_customers. How many non-cancelled orders were placed by customers in the NA region?</question>
+    <answer>1</answer>
   </qa_pair>
   <qa_pair>
-    <question>Can arango_backup accept an absolute outputDir such as /tmp/backup?</question>
-    <answer>No</answer>
+    <question>Using read-only tools, inspect mcp_eval_products and find the category of the highest priced product. What is that category?</question>
+    <answer>analytics</answer>
   </qa_pair>
   <qa_pair>
-    <question>Which field in a successful arango_query structured response contains the returned documents?</question>
-    <answer>rows</answer>
+    <question>Using read-only tools, query mcp_eval_orders with a low limit first and continue reasoning from the returned rows. What is the total value of shipped orders?</question>
+    <answer>1290</answer>
   </qa_pair>
   <qa_pair>
-    <question>Which field in a successful arango_query structured response indicates whether additional cursor rows were not returned because of the limit?</question>
-    <answer>hasMore</answer>
+    <question>Using read-only tools, join mcp_eval_shipments with mcp_eval_orders and mcp_eval_products. Which carrier is handling the shipment for the Edge Driver order?</question>
+    <answer>UPS</answer>
   </qa_pair>
   <qa_pair>
-    <question>Which MCP tool permanently removes an existing collection from the configured database?</question>
-    <answer>arango_drop_collection</answer>
+    <question>Using read-only tools, list the mcp_eval_ collections and query their document counts. How many seeded evaluation collections are present?</question>
+    <answer>4</answer>
   </qa_pair>
 </evaluation>
