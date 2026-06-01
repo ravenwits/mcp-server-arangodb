@@ -4,7 +4,7 @@
   "description": "A Model Context Protocol Server for ArangoDB",
   "type": "module",
   "bin": {
-    "arango-server": "./build/index.js"
+    "arango-server": "build/index.js"
   },
   "files": [
     "build/backupPaths.js",
