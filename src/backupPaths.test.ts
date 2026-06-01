@@ -21,8 +21,9 @@ test("resolves backup output inside ARANGO_BACKUP_ROOT", async () => {
 
   try {
     const outputDir = await resolveBackupOutputDir("nightly_1");
-    assert.equal(outputDir, join(root, "nightly_1"));
-    assert.ok(outputDir.startsWith(`${root}${sep}`));
+    const realRoot = await fs.realpath(root);
+    assert.equal(outputDir, join(realRoot, "nightly_1"));
+    assert.ok(outputDir.startsWith(`${realRoot}${sep}`));
   } finally {
     if (previousRoot === undefined) {
       delete process.env.ARANGO_BACKUP_ROOT;

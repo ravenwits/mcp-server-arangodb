@@ -1,6 +1,6 @@
 {
   "name": "arango-server",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "A Model Context Protocol Server for ArangoDB",
   "type": "module",
   "bin": {
@@ -34,6 +34,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ravenwits/mcp-server-arangodb.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ravenwits/mcp-server-arangodb/issues"
   },
   "homepage": "https://github.com/ravenwits/mcp-server-arangodb#readme",
   "author": "Alp Sarıyer <hi@alpsariyer.dev>",

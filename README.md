@@ -285,6 +285,8 @@ This tool is designed for local development environments only. While technically
 
 ## Development
 
+Contributions are welcome. Please read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request.
+
 1. Clone the repository
 2. Install dependencies:
 

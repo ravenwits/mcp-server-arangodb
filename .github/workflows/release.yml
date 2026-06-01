@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    name: Publish package and create GitHub release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authorize release actor
+        run: |
+          if [ "$GITHUB_ACTOR" != "$REPOSITORY_OWNER" ]; then
+            echo "Only the repository owner can publish npm packages or create GitHub releases." >&2
+            exit 1
+          fi
+        env:
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify tag matches package version
+        run: |
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "Tag v$TAG_VERSION does not match package.json version $PACKAGE_VERSION" >&2
+            exit 1
+          fi
+
+      - name: Test
+        run: npm test
+
+      - name: Check npm version
+        id: npm_version
+        run: |
+          PACKAGE_NAME="$(node -p "require('./package.json').name")"
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          if npm view "$PACKAGE_NAME@$PACKAGE_VERSION" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm
+        if: steps.npm_version.outputs.published == 'false'
+        run: npm publish
+
+      - name: Create GitHub release
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
+        env:
+          GH_TOKEN: ${{ github.token }}
