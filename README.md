@@ -10,51 +10,41 @@ This is a TypeScript-based MCP server that provides database interaction capabil
 
 ### Tools
 
-- `arango_query` - Execute AQL queries
+| Tool | Category | Read-only | Mutates data/schema | Purpose |
+| --- | --- | --- | --- | --- |
+| `arango_query` | Query | No | Maybe | Execute general AQL with bind variables, bounded results, and query guardrails. |
+| `arango_read_query` | Query | Yes | No | Execute read-only AQL and reject write/DDL keywords. |
+| `arango_validate_query` | Query | Yes | No | Parse and validate AQL without executing it. |
+| `arango_explain_query` | Query | Yes | No | Inspect AQL execution plans, index usage, and optimizer output. |
+| `arango_describe_database` | Discovery | Yes | No | Summarize collections, counts, indexes, and sample fields. |
+| `arango_list_collections` | Discovery | Yes | No | List collections in the configured database. |
+| `arango_get_collection` | Discovery | Yes | No | Return collection properties, count, and indexes. |
+| `arango_create_collection` | Collection | No | Yes | Create document or edge collections. |
+| `arango_drop_collection` | Collection | No | Yes | Drop a collection, requiring `confirm: true`. |
+| `arango_get_document` | Document | Yes | No | Fetch one document by collection and `_key`. |
+| `arango_list_documents` | Document | Yes | No | List documents with `limit` and `offset` pagination. |
+| `arango_count_documents` | Document | Yes | No | Count documents in a collection. |
+| `arango_sample_documents` | Document | Yes | No | Return a small random sample for schema discovery. |
+| `arango_insert` | Document | No | Yes | Insert one document into a collection. |
+| `arango_bulk_insert` | Document | No | Yes | Insert up to 1000 documents in one request. |
+| `arango_update` | Document | No | Yes | Partially update one document by `_key`. |
+| `arango_bulk_update` | Document | No | Yes | Patch up to 1000 documents by `_key` or `_id`. |
+| `arango_remove` | Document | No | Yes | Remove one document by `_key`. |
+| `arango_list_indexes` | Index | Yes | No | List indexes for a collection. |
+| `arango_create_index` | Index | No | Yes | Create persistent, geo, TTL, or inverted indexes. |
+| `arango_list_views` | ArangoSearch | Yes | No | List ArangoSearch and search-alias Views. |
+| `arango_create_search_view` | ArangoSearch | No | Yes | Create an ArangoSearch View linked to a collection. |
+| `arango_search` | ArangoSearch | Yes | No | Search an ArangoSearch View with analyzer-aware BM25 ranking. |
+| `arango_list_analyzers` | Analyzer | Yes | No | List ArangoSearch Analyzers. |
+| `arango_create_analyzer` | Analyzer | No | Yes | Create an ArangoSearch Analyzer. |
+| `arango_list_graphs` | Graph | Yes | No | List named graphs. |
+| `arango_create_graph` | Graph | No | Yes | Create a named graph with one edge definition. |
+| `arango_insert_edge` | Graph | No | Yes | Insert an edge document with `_from` and `_to`. |
+| `arango_traverse` | Graph | Yes | No | Traverse edges from a start vertex using an edge collection or named graph. |
+| `arango_shortest_path` | Graph | Yes | No | Find the shortest path between two vertices using an edge collection or named graph. |
+| `arango_backup` | Backup | No | Filesystem | Backup collections to JSON files under `ARANGO_BACKUP_ROOT`. |
 
-  - Takes an AQL query string as required parameter
-  - Optionally accepts bind variables for parameterized queries
-  - Accepts an optional `limit` parameter, capped at 1000 rows
-  - Returns query results as JSON text and structured MCP content
-
-- `arango_insert` - Insert documents into collections
-
-  - Takes collection name and document object as required parameters
-  - Automatically generates document key if not provided
-  - Returns the created document metadata
-
-- `arango_update` - Update existing documents
-
-  - Takes collection name, document key, and update object as required parameters
-  - Returns the updated document metadata
-
-- `arango_remove` - Remove documents from collections
-
-  - Takes collection name and document key as required parameters
-  - Returns the removed document metadata
-
-- `arango_backup` - Backup all collections to JSON files
-
-  - Writes only under `ARANGO_BACKUP_ROOT` to prevent arbitrary file writes
-  - Accepts only a safe relative `outputDir` name, such as `nightly_1`
-  - Creates JSON files for each collection with current data and refuses to overwrite existing files
-  - Useful for data backup and migration purposes
-
-- `arango_list_collections` - List all collections in the database
-
-  - Returns array of collection information including names, IDs, and types
-
-- `arango_create_collection` - Create a new collection in the database
-  - Takes collection name as required parameter
-  - Optionally specify collection type (document or edge collection)
-  - Configure waitForSync behavior for write operations
-  - Returns collection information including name, type, and status
-
-- `arango_drop_collection` - Drop an existing collection from the database
-  - Takes collection name as required parameter
-  - Requires `confirm: true` to reduce accidental destructive calls
-  - Permanently removes the collection and its documents
-  - Returns the dropped collection name and status
+All tools return JSON text and `structuredContent` when successful. Read-heavy tools expose bounded `limit` parameters to keep responses agent-friendly. Query tools also support guardrails such as `memoryLimit`, `maxRuntime`, and `failOnWarning` where applicable.
 
 ## Installation
 
